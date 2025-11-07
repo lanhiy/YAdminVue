@@ -1,4 +1,3 @@
-<!-- src/views/system/role/components/role-form.vue -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import {
@@ -12,6 +11,7 @@ import {
   Tree,
   Textarea,
   message,
+  Tag,
 } from 'ant-design-vue';
 import {
   createRoleApi,
@@ -38,6 +38,7 @@ const loading = ref(false);
 const menuTreeData = ref<any[]>([]);
 const checkedKeys = ref<number[]>([]);
 const halfCheckedKeys = ref<number[]>([]);
+const allMenuData = ref<MenuInfo[]>([]);
 
 const formData = ref<RoleInfo>({
   name: '',
@@ -59,16 +60,42 @@ const modalTitle = computed(() => {
   return props.mode === 'create' ? '新增角色' : '编辑角色';
 });
 
-// 构建菜单树
-const buildMenuTree = (menus: MenuInfo[]): any[] => {
-  return menus.map((menu) => ({
-    title: menu.title,
-    key: menu.id,
-    children: menu.children && menu.children.length > 0 ? buildMenuTree(menu.children) : undefined,
-  }));
+// 菜单类型图标映射
+const getMenuTypeIcon = (type: number) => {
+  const iconMap: Record<number, { icon: string; color: string; text: string }> = {
+    [MenuType.CATALOG]: { icon: '📁', color: '#1890ff', text: '目录' },
+    [MenuType.MENU]: { icon: '📄', color: '#52c41a', text: '菜单' },
+    [MenuType.BUTTON]: { icon: '🔘', color: '#faad14', text: '按钮' },
+  };
+  return iconMap[type] || { icon: '📋', color: '#666', text: '未知' };
 };
 
-// 获取所有菜单ID（包括父节点）
+// 构建菜单树（包含按钮，使用自定义标题）
+const buildMenuTree = (menus: MenuInfo[]): any[] => {
+  return menus.map((menu) => {
+    const typeInfo = getMenuTypeIcon(menu.type);
+
+    const node: any = {
+      key: menu.id,
+      // 使用 slots 来自定义标题
+      title: menu.title,
+      // 添加自定义属性用于渲染
+      menuType: menu.type,
+      typeIcon: typeInfo.icon,
+      typeColor: typeInfo.color,
+      typeText: typeInfo.text,
+    };
+
+    // 如果有子菜单或子按钮，递归构建
+    if (menu.children && menu.children.length > 0) {
+      node.children = buildMenuTree(menu.children);
+    }
+
+    return node;
+  });
+};
+
+// 获取所有菜单ID（包括按钮和父节点）
 const getAllMenuIds = (menus: MenuInfo[]): number[] => {
   const ids: number[] = [];
   const traverse = (items: MenuInfo[]) => {
@@ -83,15 +110,17 @@ const getAllMenuIds = (menus: MenuInfo[]): number[] => {
   return ids;
 };
 
-// 获取叶子节点ID
+// 获取叶子节点ID（包括按钮）
 const getLeafMenuIds = (menus: MenuInfo[], selectedIds: number[]): number[] => {
   const leafIds: number[] = [];
   const traverse = (items: MenuInfo[]) => {
     items.forEach((item) => {
       if (selectedIds.includes(item.id!)) {
+        // 如果是叶子节点（没有子节点）或者是按钮类型，则添加到选中列表
         if (!item.children || item.children.length === 0) {
           leafIds.push(item.id!);
         } else {
+          // 如果有子节点，继续遍历
           traverse(item.children);
         }
       }
@@ -105,6 +134,7 @@ const getLeafMenuIds = (menus: MenuInfo[], selectedIds: number[]): number[] => {
 const loadMenuList = async () => {
   try {
     const data = await getMenuListApi();
+    allMenuData.value = data;
     menuTreeData.value = buildMenuTree(data);
 
     // 如果是编辑模式，设置已选中的菜单
@@ -202,7 +232,7 @@ const handleClose = () => {
     :title="modalTitle"
     :open="visible"
     :confirm-loading="loading"
-    :width="800"
+    :width="900"
     @cancel="handleClose"
     @ok="handleSubmit"
   >
@@ -241,14 +271,28 @@ const handleClose = () => {
       </FormItem>
 
       <FormItem label="菜单权限" name="menu_ids">
-        <Tree
-          v-model:checkedKeys="checkedKeys"
-          checkable
-          :tree-data="menuTreeData"
-          :field-names="{ title: 'title', key: 'key', children: 'children' }"
-          :default-expand-all="true"
-          @check="handleTreeCheck"
-        />
+        <div class="mb-3 flex gap-3 text-sm">
+          <Tag color="blue">📁 目录</Tag>
+          <Tag color="green">📄 菜单</Tag>
+          <Tag color="orange">🔘 按钮权限</Tag>
+        </div>
+        <div class="border border-gray-200 rounded p-3 max-h-96 overflow-auto">
+          <Tree
+            v-model:checkedKeys="checkedKeys"
+            checkable
+            :tree-data="menuTreeData"
+            :field-names="{ title: 'title', key: 'key', children: 'children' }"
+            :default-expand-all="true"
+            @check="handleTreeCheck"
+          >
+            <template #title="{ title, menuType, typeIcon }">
+              <span>
+                <span class="mr-1">{{ typeIcon }}</span>
+                <span>{{ title }}</span>
+              </span>
+            </template>
+          </Tree>
+        </div>
       </FormItem>
 
       <FormItem label="排序" name="sort">
@@ -266,3 +310,10 @@ const handleClose = () => {
     </Form>
   </Modal>
 </template>
+
+<style scoped>
+:deep(.ant-tree-title) {
+  display: inline-flex;
+  align-items: center;
+}
+</style>

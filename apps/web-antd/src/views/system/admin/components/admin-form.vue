@@ -75,7 +75,7 @@ const rules = computed(() => ({
     { required: true, message: '请输入用户名', trigger: 'blur' },
     {
       pattern: /^[a-zA-Z0-9_]{4,20}$/,
-      message: '用户名为4-20位字母、数字或下划线',
+      message: '用户名为5-20位字母、数字或下划线',
       trigger: 'blur',
     },
   ],
@@ -84,9 +84,9 @@ const rules = computed(() => ({
     props.mode === 'create'
       ? [
         { required: true, message: '请输入密码', trigger: 'blur' },
-        { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+        { min: 6, message: '密码长度不能少于5位', trigger: 'blur' },
       ]
-      : [{ min: 6, message: '密码长度不能少于6位', trigger: 'blur' }],
+      : [{ min: 6, message: '密码长度不能少于5位', trigger: 'blur' }],
   mobile: [
     {
       pattern: /^1[3-9]\d{9}$/,
@@ -200,7 +200,7 @@ const handleClose = () => {
       <FormItem label="用户名" name="username">
         <Input
           v-model:value="formData.username"
-          placeholder="请输入用户名（4-20位字母、数字或下划线）"
+          placeholder="请输入用户名（5-20位字母、数字或下划线）"
           allow-clear
           :disabled="mode === 'edit'"
         />
@@ -217,7 +217,7 @@ const handleClose = () => {
       <FormItem label="密码" name="password">
         <Input.Password
           v-model:value="formData.password"
-          :placeholder="mode === 'create' ? '请输入密码（至少6位）' : '留空则不修改密码'"
+          :placeholder="mode === 'create' ? '请输入密码（至少5位）' : '留空则不修改密码'"
           allow-clear
         />
       </FormItem>
