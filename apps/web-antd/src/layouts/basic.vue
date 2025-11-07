@@ -2,11 +2,12 @@
 import type { NotificationItem } from '@vben/layouts';
 
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
 import { VBEN_DOC_URL, VBEN_GITHUB_URL } from '@vben/constants';
 import { useWatermark } from '@vben/hooks';
-import { BookOpenText, CircleHelp, SvgGithubIcon } from '@vben/icons';
+import { BookOpenText, CircleHelp, SvgGithubIcon,EosIconsPatterns,EosIconsAdminOutlined } from '@vben/icons';
 import {
   BasicLayout,
   LockScreen,
@@ -21,6 +22,7 @@ import { $t } from '#/locales';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
 
+const router = useRouter();
 const notifications = ref<NotificationItem[]>([
   {
     avatar: 'https://avatar.vercel.sh/vercel.svg?text=VB',
@@ -60,7 +62,22 @@ const showDot = computed(() =>
   notifications.value.some((item) => !item.isRead),
 );
 
+// ✅ 添加个人设置菜单项
 const menus = computed(() => [
+  {
+    handler: () => {
+      router.push('/account/profile');
+    },
+    icon: EosIconsPatterns,
+    text: '个人设置',
+  },
+  {
+    handler: () => {
+      router.push('/account/profile?tab=security');
+    },
+    icon: EosIconsAdminOutlined,
+    text: '安全设置',
+  },
   // {
   //   handler: () => {
   //     openWindow(VBEN_DOC_URL, {
@@ -105,6 +122,7 @@ function handleNoticeClear() {
 function handleMakeAll() {
   notifications.value.forEach((item) => (item.isRead = true));
 }
+
 watch(
   () => ({
     enable: preferences.app.watermark,
