@@ -1,92 +1,87 @@
+// src/api/system/config.ts
 import { requestClient } from '#/api/request';
 
 /**
- * 系统配置项接口
+ * 系统配置信息
  */
-export interface SystemConfigItem {
-  id?: number;
-  config_key: string;
-  config_value: string;
-  config_value_decoded?: any;
-  config_type: string;
-  description?: string;
-  sort?: number;
-  status: number;
-  created_at?: string;
-  updated_at?: string;
+export interface SystemConfigInfo {
+  // 应用配置
+  app_name: string;
+  app_default_home_path: string;
+  app_access_mode: 'frontend' | 'backend';
+  app_login_expired_mode: 'modal' | 'page';
+  app_locale: string;
+  app_watermark: boolean;
+  app_watermark_content: string;
+  app_default_avatar: string;
+  app_enable_refresh_token: boolean;
+  app_dynamic_title: boolean;
+
+  // Logo配置
+  logo_enable: boolean;
+  logo_source: string;
+  logo_fit: string;
+
+  // 主题配置
+  theme_mode: 'light' | 'dark' | 'auto';
+  theme_color_primary: string;
+  theme_color_success: string;
+  theme_color_warning: string;
+  theme_color_destructive: string;
+  theme_builtin_type: string;
+  theme_radius: string;
+
+  // 版权配置
+  copyright_enable: boolean;
+  copyright_company_name: string;
+  copyright_company_site_link: string;
+  copyright_date: string;
+  copyright_icp: string;
+  copyright_icp_link: string;
+
+  // 布局配置
+  layout_type: string;
+  content_compact: string;
+  content_compact_width: number;
+
+  // 标签页配置
+  tabbar_enable: boolean;
+  tabbar_keep_alive: boolean;
+  tabbar_persist: boolean;
+  tabbar_show_icon: boolean;
+  tabbar_style_type: string;
+
+  // 侧边栏配置
+  sidebar_enable: boolean;
+  sidebar_width: number;
+  sidebar_collapsed_button: boolean;
+  sidebar_expand_on_hover: boolean;
+
+  // 头部配置
+  header_enable: boolean;
+  header_height: number;
+  header_mode: string;
+
+  // 面包屑配置
+  breadcrumb_enable: boolean;
+  breadcrumb_show_icon: boolean;
+  breadcrumb_show_home: boolean;
+
+  // 页脚配置
+  footer_enable: boolean;
+  footer_height: number;
 }
 
 /**
- * 配置列表查询参数
+ * 获取系统配置
  */
-export interface ConfigListParams {
-  page?: number;
-  page_size?: number;
-  config_key?: string;
-  config_type?: string;
-  status?: number;
+export async function getSystemConfigApi() {
+  return requestClient.get<SystemConfigInfo>('/system/config');
 }
 
 /**
- * 配置列表返回结果
+ * 更新系统配置
  */
-export interface ConfigListResult {
-  list: SystemConfigItem[];
-  total: number;
-}
-
-/**
- * 获取配置列表（后台管理，需要认证）
- */
-export async function getConfigListApi(params?: ConfigListParams) {
-  return requestClient.get<ConfigListResult>('/system/config/list', { params });
-}
-
-/**
- * 按类型获取配置
- */
-export async function getConfigByTypeApi(type: string) {
-  return requestClient.get<SystemConfigItem[]>(`/system/config/type/${type}`);
-}
-
-/**
- * 获取配置详情
- */
-export async function getConfigByIdApi(id: number) {
-  return requestClient.get<SystemConfigItem>(`/system/config/${id}`);
-}
-
-/**
- * 创建配置
- */
-export async function createConfigApi(data: SystemConfigItem) {
-  return requestClient.post<SystemConfigItem>('/system/config', data);
-}
-
-/**
- * 更新配置
- */
-export async function updateConfigApi(id: number, data: SystemConfigItem) {
-  return requestClient.put<SystemConfigItem>(`/system/config/${id}`, data);
-}
-
-/**
- * 批量更新配置
- */
-export async function batchUpdateConfigApi(configs: Record<string, any>) {
-  return requestClient.post('/system/config/batch-update', { configs });
-}
-
-/**
- * 删除配置
- */
-export async function deleteConfigApi(id: number) {
-  return requestClient.delete(`/system/config/${id}`);
-}
-
-/**
- * 修改配置状态
- */
-export async function changeConfigStatusApi(id: number, status: number) {
-  return requestClient.post('/system/config/change-status', { id, status });
+export async function updateSystemConfigApi(data: Partial<SystemConfigInfo>) {
+  return requestClient.post('/system/config/update', data);
 }
