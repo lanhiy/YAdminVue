@@ -1,4 +1,3 @@
-// src/api/system/admin.ts
 import { requestClient } from '#/api/request';
 
 /**
