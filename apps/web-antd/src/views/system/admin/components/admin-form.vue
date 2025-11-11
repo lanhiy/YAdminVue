@@ -246,10 +246,16 @@ const handleClose = () => {
         <Select
           v-model:value="formData.role_ids"
           mode="multiple"
-          placeholder="请选择角色"
+          placeholder="请选择角色（可多选）"
           :options="roleOptions"
+          :max-tag-count="2"
+          :max-tag-text-length="10"
           allow-clear
+          show-search
         />
+        <template #extra>
+          <span class="text-gray-400 text-xs">可选择多个角色，点击外部区域关闭</span>
+        </template>
       </FormItem>
 
       <FormItem label="排序" name="sort">

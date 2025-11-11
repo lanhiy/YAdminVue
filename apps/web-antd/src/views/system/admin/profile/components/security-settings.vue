@@ -114,7 +114,7 @@ const handleChangePassword = async () => {
     if (error.errorFields) {
       return;
     }
-    message.error(error.message || '密码修改失败');
+    // message.error(error.message || '密码修改失败');
   } finally {
     loading.value = false;
   }
