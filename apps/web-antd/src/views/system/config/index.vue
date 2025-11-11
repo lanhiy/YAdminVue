@@ -3,7 +3,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { Page } from '@vben/common-ui';
 import { Card, Tabs, TabPane, Form, FormItem, Input, InputNumber, Select, SelectOption, Radio, RadioGroup, Switch, Button, message, Slider } from 'ant-design-vue';
-import { getSystemConfigApi, updateSystemConfigApi, type SystemConfigInfo } from '#/api/system/config';
+import { getSystemConfigApi, updateSystemConfigApi, type SystemConfigInfo } from '#/api';
 
 // 数据
 const loading = ref(false);
