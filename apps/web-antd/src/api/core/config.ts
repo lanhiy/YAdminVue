@@ -80,6 +80,15 @@ export async function getSystemConfigApi() {
 }
 
 /**
+ * 按类型获取配置
+ */
+export async function getConfigByTypeApi(type: string) {
+  return requestClient.get<SystemConfigItem[]>(`/system/config/type/${type}`);
+}
+
+
+
+/**
  * 更新系统配置
  */
 export async function updateSystemConfigApi(data: Partial<SystemConfigInfo>) {
