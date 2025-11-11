@@ -1,6 +1,7 @@
 <!-- src/views/system/menu/index.vue -->
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue';
+import { Icon } from '@iconify/vue';
 import { Modal } from 'ant-design-vue';
 import { Page } from '@vben/common-ui';
 import { Button, Table, Switch,message } from 'ant-design-vue';
@@ -33,9 +34,12 @@ const columns = [
     dataIndex: 'icon',
     width: 80,
     customRender: ({ record }: { record: MenuInfo }) => {
-      return record.icon
-        ? h('i', { class: record.icon, style: { fontSize: '18px' } })
-        : '-';
+      if (!record.icon) return null;
+      return h(Icon, {
+        icon: record.icon,  // 直接使用 f7:command
+        width: 20,
+        height: 20
+      });
     },
   },
   {
@@ -95,29 +99,44 @@ const columns = [
     width: 200,
     fixed: 'right',
     customRender: ({ record }: { record: MenuInfo }) => {
-      return h('div', { class: 'flex gap-2' }, [
+      return h('div', { class: 'flex items-center gap-3' }, [
         h(
-          'a',
+          Button,
           {
+            type: 'link',
+            size: 'small',
             onClick: () => handleEdit(record),
           },
-          '编辑',
+          {
+            default: () => '编辑',
+            icon: () => h(Icon, { icon: 'mdi:pencil', width: 16 }),
+          },
         ),
         h(
-          'a',
+          Button,
           {
-            onClick: () => handleAdd(record.id!),
+            type: 'link',
+            size: 'small',
             style: { color: '#52c41a' },
+            onClick: () => handleAdd(record.id!),
           },
-          '添加子菜单',
+          {
+            default: () => '添加',
+            icon: () => h(Icon, { icon: 'mdi:plus', width: 16 }),
+          },
         ),
         h(
-          'a',
+          Button,
           {
+            type: 'link',
+            size: 'small',
+            danger: true,
             onClick: () => handleDelete(record),
-            style: { color: '#ff4d4f' },
           },
-          '删除',
+          {
+            default: () => '删除',
+            icon: () => h(Icon, { icon: 'mdi:delete', width: 16 }),
+          },
         ),
       ]);
     },

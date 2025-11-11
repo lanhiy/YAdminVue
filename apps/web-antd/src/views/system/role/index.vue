@@ -1,6 +1,6 @@
-<!-- src/views/system/role/index.vue -->
 <script setup lang="ts">
 import { ref, onMounted, h } from 'vue';
+import { Icon } from '@iconify/vue';
 import { Modal } from 'ant-design-vue';
 import { Page } from '@vben/common-ui';
 import { Button, Table, Switch, Input, Select, Space, message } from 'ant-design-vue';
@@ -30,9 +30,8 @@ const searchForm = ref({
   status: undefined as number | undefined,
 });
 
-// 状态选项
+// 状态选项 - 修复:移除"全部"选项,使用 allowClear 代替
 const statusOptions = [
-  { label: '全部', value: undefined },
   { label: '启用', value: RoleStatus.ENABLED },
   { label: '禁用', value: RoleStatus.DISABLED },
 ];
@@ -84,21 +83,31 @@ const columns = [
     width: 150,
     fixed: 'right',
     customRender: ({ record }: { record: RoleInfo }) => {
-      return h('div', { class: 'flex gap-2' }, [
+      return h('div', { class: 'flex items-center gap-2' }, [
         h(
-          'a',
+          Button,
           {
+            type: 'link',
+            size: 'small',
             onClick: () => handleEdit(record),
           },
-          '编辑',
+          {
+            default: () => '编辑',
+            icon: () => h(Icon, { icon: 'mdi:pencil', width: 16 }),
+          },
         ),
         h(
-          'a',
+          Button,
           {
+            type: 'link',
+            size: 'small',
+            danger: true,
             onClick: () => handleDelete(record),
-            style: { color: '#ff4d4f' },
           },
-          '删除',
+          {
+            default: () => '删除',
+            icon: () => h(Icon, { icon: 'mdi:delete', width: 16 }),
+          },
         ),
       ]);
     },
