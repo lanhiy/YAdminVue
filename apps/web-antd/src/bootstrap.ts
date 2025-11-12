@@ -1,4 +1,3 @@
-// src/bootstrap.ts
 import { createApp, watchEffect } from 'vue';
 
 import { registerAccessDirective } from '@vben/access';
@@ -24,18 +23,27 @@ async function bootstrap(namespace: string) {
   // 初始化表单组件
   await initSetupVbenForm();
 
+  // // 设置弹窗的默认配置
+  // setDefaultModalProps({
+  //   fullscreenButton: false,
+  // });
+  // // 设置抽屉的默认配置
+  // setDefaultDrawerProps({
+  //   zIndex: 1020,
+  // });
+
   const app = createApp(App);
 
   // 注册v-loading指令
   registerLoadingDirective(app, {
-    loading: 'loading',
+    loading: 'loading', // 在这里可以自定义指令名称，也可以明确提供false表示不注册这个指令
     spinning: 'spinning',
   });
 
   // 国际化 i18n 配置
   await setupI18n(app);
 
-  // 配置 pinia-store
+  // 配置 pinia-tore
   await initStores(app, { namespace });
 
   // 安装权限指令
@@ -52,9 +60,6 @@ async function bootstrap(namespace: string) {
   const { MotionPlugin } = await import('@vben/plugins/motion');
   app.use(MotionPlugin);
 
-  // 🔥 在这里加载远程配置
-  await loadRemoteConfigInBootstrap();
-
   // 动态更新标题
   watchEffect(() => {
     if (preferences.app.dynamicTitle) {
@@ -66,72 +71,6 @@ async function bootstrap(namespace: string) {
   });
 
   app.mount('#app');
-}
-
-/**
- * 在 bootstrap 中加载远程配置
- */
-async function loadRemoteConfigInBootstrap() {
-  try {
-    console.log('🔄 [Bootstrap] 开始加载远程配置...');
-    console.log('📋 [Bootstrap] 更新前 app.name:', preferences.app.name);
-
-    const { getSystemConfigApi } = await import('#/api');
-    const { transformConfigToPreferences } = await import('#/utils/config-transform');
-
-    const response = await getSystemConfigApi();
-    console.log('✅ [Bootstrap] API 响应:', response);
-
-    const systemConfig = response.data || response;
-    console.log('✅ [Bootstrap] 系统配置数据:', systemConfig);
-
-    const dynamicConfig = transformConfigToPreferences(systemConfig);
-    console.log('✅ [Bootstrap] 转换后的配置:', dynamicConfig);
-
-    // 🔥 方法1: 直接使用 Object.assign 深度更新
-    if (dynamicConfig.app) {
-      Object.assign(preferences.app, dynamicConfig.app);
-    }
-    if (dynamicConfig.logo) {
-      Object.assign(preferences.logo, dynamicConfig.logo);
-    }
-    if (dynamicConfig.theme) {
-      Object.assign(preferences.theme, dynamicConfig.theme);
-    }
-    if (dynamicConfig.copyright) {
-      Object.assign(preferences.copyright, dynamicConfig.copyright);
-    }
-    if (dynamicConfig.tabbar) {
-      Object.assign(preferences.tabbar, dynamicConfig.tabbar);
-    }
-    if (dynamicConfig.sidebar) {
-      Object.assign(preferences.sidebar, dynamicConfig.sidebar);
-    }
-    if (dynamicConfig.header) {
-      Object.assign(preferences.header, dynamicConfig.header);
-    }
-    if (dynamicConfig.breadcrumb) {
-      Object.assign(preferences.breadcrumb, dynamicConfig.breadcrumb);
-    }
-    if (dynamicConfig.footer) {
-      Object.assign(preferences.footer, dynamicConfig.footer);
-    }
-
-    console.log('✅ [Bootstrap] 远程配置应用成功！');
-    console.log('📋 [Bootstrap] 更新后 app.name:', preferences.app.name);
-    console.log('📋 [Bootstrap] 完整配置:', JSON.parse(JSON.stringify(preferences)));
-
-    // 🔥 手动触发 CSS 变量更新
-    const { updateCSSVariables } = await import('@vben/preferences/update-css-variables');
-    updateCSSVariables(preferences as any);
-
-  } catch (error) {
-    console.error('❌ [Bootstrap] 配置加载失败:', error);
-    if (error?.response) {
-      console.error('   响应状态:', error.response.status);
-      console.error('   响应数据:', error.response.data);
-    }
-  }
 }
 
 export { bootstrap };
