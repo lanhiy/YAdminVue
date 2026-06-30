@@ -1,26 +1,25 @@
 <!-- src/views/system/menu/components/menu-form.vue -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import type { MenuInfo } from '#/api';
+
+import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+
 import {
-  Modal,
   Form,
   FormItem,
   Input,
   InputNumber,
-  Radio,
+  message,
+  Modal,
   RadioGroup,
   Switch,
-  TreeSelect,
   Textarea,
-  message
+  TreeSelect,
 } from 'ant-design-vue';
-import {
-  createMenuApi,
-  updateMenuApi,
-  type MenuInfo,
-  MenuType,
-  MenuStatus,
-} from '#/api';
+
+import { createMenuApi, MenuStatus, MenuType, updateMenuApi } from '#/api';
+import { refreshAccess } from '#/utils/refresh-access';
 
 interface Props {
   visible: boolean;
@@ -31,10 +30,11 @@ interface Props {
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-  'update:visible': [value: boolean];
   success: [];
+  'update:visible': [value: boolean];
 }>();
 
+const router = useRouter();
 const formRef = ref();
 const loading = ref(false);
 const formData = ref<MenuInfo>({
@@ -68,32 +68,56 @@ const modalTitle = computed(() => {
 // 构建父菜单树形选项
 const buildMenuTree = (menus: MenuInfo[]): any[] => {
   return menus
-    .filter(menu => menu.type !== MenuType.BUTTON) // 排除按钮类型
-    .map(menu => ({
+    .filter((menu) => menu.type !== MenuType.BUTTON) // 排除按钮类型
+    .map((menu) => ({
       label: menu.title,
       value: menu.id,
-      children: menu.children && menu.children.length > 0
-        ? buildMenuTree(menu.children)
-        : undefined
+      children:
+        menu.children && menu.children.length > 0
+          ? buildMenuTree(menu.children)
+          : undefined,
     }));
 };
 
 // 父菜单选项
 const parentMenuOptions = computed(() => {
-  return [
-    { label: '根菜单', value: 0 },
-    ...buildMenuTree(props.menuList),
-  ];
+  return [{ label: '根菜单', value: 0 }, ...buildMenuTree(props.menuList)];
 });
 
+// 根据路由路径推导组件路径，如 /test -> /views/test/index
+function resolveComponentPath(path: string) {
+  const segment = path.replace(/^\//, '').split('/').find(Boolean);
+  if (!segment) {
+    return '';
+  }
+  return `/views/${segment}/index`;
+}
+
 // 表单规则
-const rules = {
+const rules = computed(() => ({
   name: [{ required: true, message: '请输入路由名称', trigger: 'blur' }],
   path: [{ required: true, message: '请输入路由路径', trigger: 'blur' }],
   title: [{ required: true, message: '请输入菜单标题', trigger: 'blur' }],
   type: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
-};
+  component:
+    formData.value.type === MenuType.MENU
+      ? [{ required: true, message: '请输入组件路径', trigger: 'blur' }]
+      : [],
+}));
+
+// 路由路径变化时自动补全组件路径
+watch(
+  () => formData.value.path,
+  (path) => {
+    if (formData.value.type !== MenuType.MENU || !path) {
+      return;
+    }
+    if (!formData.value.component) {
+      formData.value.component = resolveComponentPath(path);
+    }
+  },
+);
 
 // 监听弹窗显示
 watch(
@@ -128,6 +152,7 @@ const handleSubmit = async () => {
       message.success('更新成功');
     }
 
+    await refreshAccess(router);
     emit('success');
     handleClose();
   } catch (error: any) {
@@ -202,10 +227,14 @@ const handleClose = () => {
         />
       </FormItem>
 
-      <FormItem label="组件路径" name="component" v-if="formData.type !== MenuType.BUTTON">
+      <FormItem
+        label="组件路径"
+        name="component"
+        v-if="formData.type !== MenuType.BUTTON"
+      >
         <Input
           v-model:value="formData.component"
-          placeholder="请输入组件路径"
+          placeholder="如：/views/test/index"
           allow-clear
         />
       </FormItem>
@@ -225,7 +254,7 @@ const handleClose = () => {
           allow-clear
         >
           <template #prefix v-if="formData.icon">
-            <i :class="formData.icon" />
+            <i :class="formData.icon"></i>
           </template>
         </Input>
       </FormItem>

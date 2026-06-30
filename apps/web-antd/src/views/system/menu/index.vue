@@ -1,21 +1,28 @@
 <!-- src/views/system/menu/index.vue -->
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue';
-import { Icon } from '@iconify/vue';
-import { Modal } from 'ant-design-vue';
+import type { MenuInfo } from '#/api';
+
+import { h, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+
 import { Page } from '@vben/common-ui';
-import { Button, Table, Switch,message } from 'ant-design-vue';
+
+import { Icon } from '@iconify/vue';
+import { Button, message, Modal, Switch, Table } from 'ant-design-vue';
+
 import {
-  getMenuListApi,
-  deleteMenuApi,
   changeMenuStatusApi,
-  type MenuInfo,
-  MenuType,
+  deleteMenuApi,
+  getMenuListApi,
   MenuStatus,
+  MenuType,
 } from '#/api';
+import { refreshAccess } from '#/utils/refresh-access';
+
 import MenuForm from './components/menu-form.vue';
 
 // 数据
+const router = useRouter();
 const loading = ref(false);
 const menuList = ref<MenuInfo[]>([]);
 const formModalVisible = ref(false);
@@ -36,9 +43,9 @@ const columns = [
     customRender: ({ record }: { record: MenuInfo }) => {
       if (!record.icon) return null;
       return h(Icon, {
-        icon: record.icon,  // 直接使用 f7:command
+        icon: record.icon, // 直接使用 f7:command
         width: 20,
-        height: 20
+        height: 20,
       });
     },
   },
@@ -149,7 +156,7 @@ const loadMenuList = async () => {
     loading.value = true;
     const data = await getMenuListApi();
     menuList.value = data;
-  } catch (error) {
+  } catch {
     message.error('加载菜单列表失败');
   } finally {
     loading.value = false;
@@ -191,6 +198,7 @@ const handleDelete = (record: MenuInfo) => {
         await deleteMenuApi(record.id!);
         message.success('删除成功');
         await loadMenuList();
+        await refreshAccess(router);
       } catch (error: any) {
         message.error(error.message || '删除失败');
       }
@@ -205,6 +213,7 @@ const handleStatusChange = async (record: MenuInfo, checked: boolean) => {
     await changeMenuStatusApi(record.id!, status);
     message.success('状态修改成功');
     record.status = status;
+    await refreshAccess(router);
   } catch (error: any) {
     message.error(error.message || '状态修改失败');
   }
@@ -230,7 +239,7 @@ onMounted(() => {
     <template #extra>
       <Button type="primary" @click="handleAdd()">
         <template #icon>
-          <i class="i-ant-design:plus-outlined" />
+          <i class="i-ant-design:plus-outlined"></i>
         </template>
         新增菜单
       </Button>
