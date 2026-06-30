@@ -70,6 +70,9 @@ export interface SystemConfigInfo {
   // 页脚配置
   footer_enable: boolean;
   footer_height: number;
+
+  // 业务配置
+  certificate_query_url: string;
 }
 
 /**

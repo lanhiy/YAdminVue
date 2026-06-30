@@ -25,6 +25,7 @@ import {
 } from '#/api';
 
 import CertificateForm from './components/certificate-form.vue';
+import CertificateQrcode from './components/certificate-qrcode.vue';
 
 // 数据状态
 const loading = ref(false);
@@ -35,6 +36,11 @@ const pageSize = ref(20);
 const formModalVisible = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const currentCertificate = ref<CertificateInfo | null>(null);
+
+// 二维码弹窗状态
+const qrcodeModalVisible = ref(false);
+const qrcodeUrl = ref('');
+const qrcodeCertNo = ref('');
 
 // 搜索条件
 const searchForm = ref({
@@ -144,10 +150,22 @@ const columns = [
   {
     title: '操作',
     key: 'action',
-    width: 150,
+    width: 230,
     fixed: 'right',
     customRender: ({ record }: { record: CertificateInfo }) => {
       return h('div', { class: 'flex items-center gap-2' }, [
+        h(
+          Button,
+          {
+            type: 'link',
+            size: 'small',
+            onClick: () => handleShowQrcode(record),
+          },
+          {
+            default: () => '二维码',
+            icon: () => h(Icon, { icon: 'mdi:qrcode', width: 16 }),
+          },
+        ),
         h(
           Button,
           {
@@ -213,6 +231,13 @@ const handleReset = () => {
   };
   page.value = 1;
   loadCertificateList();
+};
+
+// 查看二维码
+const handleShowQrcode = (record: CertificateInfo) => {
+  qrcodeUrl.value = record.qr_url || '';
+  qrcodeCertNo.value = record.cert_no || '';
+  qrcodeModalVisible.value = true;
 };
 
 // 新增证书
@@ -372,6 +397,13 @@ onMounted(() => {
       :certificate-data="currentCertificate"
       :mode="formMode"
       @success="handleFormSuccess"
+    />
+
+    <!-- 证书二维码弹窗 -->
+    <CertificateQrcode
+      v-model:visible="qrcodeModalVisible"
+      :cert-no="qrcodeCertNo"
+      :url="qrcodeUrl"
     />
   </Page>
 </template>

@@ -31,6 +31,8 @@ export interface CertificateInfo {
   updated_by?: number;
   created_by_name?: string;
   updated_by_name?: string;
+  /** 二维码地址（后端附加字段，不入库） */
+  qr_url?: string;
   created_at?: string;
   updated_at?: string;
 }
