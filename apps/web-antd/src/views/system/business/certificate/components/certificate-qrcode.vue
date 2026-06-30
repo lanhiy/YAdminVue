@@ -76,18 +76,23 @@ const handleClose = () => {
   >
     <div class="flex flex-col items-center gap-4 py-4">
       <template v-if="hasUrl">
-        <canvas ref="canvasRef" />
-        <div class="max-w-full break-all px-4 text-center text-xs text-gray-500">
+        <canvas ref="canvasRef"></canvas>
+        <div
+          class="max-w-full break-all px-4 text-center text-xs text-gray-500"
+        >
           {{ url }}
         </div>
         <Button type="primary" @click="handleDownload">
           <template #icon>
-            <i class="i-ant-design:download-outlined" />
+            <i class="i-ant-design:download-outlined"></i>
           </template>
           下载二维码
         </Button>
       </template>
-      <Empty v-else description="未配置证书查询URL，请先在「系统配置 - 业务配置」中设置" />
+      <Empty
+        v-else
+        description="未配置证书查询URL，请先在「系统配置 - 业务配置」中设置"
+      />
     </div>
   </Modal>
 </template>

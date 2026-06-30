@@ -8,7 +8,7 @@ export interface SystemConfigInfo {
   // 应用配置
   app_name: string;
   app_default_home_path: string;
-  app_access_mode: 'frontend' | 'backend';
+  app_access_mode: 'backend' | 'frontend';
   app_login_expired_mode: 'modal' | 'page';
   app_locale: string;
   app_watermark: boolean;
@@ -23,7 +23,7 @@ export interface SystemConfigInfo {
   logo_fit: string;
 
   // 主题配置
-  theme_mode: 'light' | 'dark' | 'auto';
+  theme_mode: 'auto' | 'dark' | 'light';
   theme_color_primary: string;
   theme_color_success: string;
   theme_color_warning: string;
