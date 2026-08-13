@@ -111,14 +111,25 @@ function handleEnter(event: KeyboardEvent) {
 
 watch(() => messageStore.history.length, scrollToBottom);
 
+async function selectRoutePeer(value: unknown) {
+  const peerId = Number(value || 0);
+  if (peerId > 0) {
+    await selectPeer(peerId);
+  } else {
+    messageStore.clearSelection();
+  }
+}
+
+watch(
+  () => route.query.peerId,
+  (peerId, previousPeerId) => {
+    if (peerId !== previousPeerId) void selectRoutePeer(peerId);
+  },
+);
+
 onMounted(async () => {
   await messageStore.start();
-  const queryPeer = Number(route.query.peerId || 0);
-  const initialPeer = queryPeer > 0
-    ? queryPeer
-    : (messageStore.conversations ?? [])[0]?.peer.id
-      ?? (messageStore.users ?? [])[0]?.id;
-  if (initialPeer) await selectPeer(initialPeer);
+  await selectRoutePeer(route.query.peerId);
 });
 </script>
 
@@ -243,15 +254,16 @@ onMounted(async () => {
   height: min(720px, calc(100vh - 184px));
   min-height: 520px;
   overflow: hidden;
-  background: var(--ant-color-bg-container);
-  border: 1px solid var(--ant-color-border-secondary);
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
 }
 
 .conversation-sidebar {
   min-width: 0;
-  background: var(--ant-color-fill-quaternary);
-  border-right: 1px solid var(--ant-color-border-secondary);
+  background: hsl(var(--muted));
+  border-right: 1px solid hsl(var(--border));
 }
 
 .sidebar-heading,
@@ -266,7 +278,7 @@ onMounted(async () => {
   height: 60px;
   padding: 0 16px;
   font-weight: 600;
-  border-bottom: 1px solid var(--ant-color-border-secondary);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .contact-list {
@@ -285,12 +297,12 @@ onMounted(async () => {
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--ant-color-border-secondary);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .contact-row:hover,
 .contact-row.active {
-  background: var(--ant-color-bg-text-hover);
+  background: hsl(var(--accent));
 }
 
 .contact-main,
@@ -318,7 +330,7 @@ onMounted(async () => {
 .contact-meta time,
 .message-state {
   font-size: 12px;
-  color: var(--ant-color-text-secondary);
+  color: hsl(var(--muted-foreground));
 }
 
 .contact-preview {
@@ -338,7 +350,7 @@ onMounted(async () => {
   line-height: 18px;
   color: #fff;
   text-align: center;
-  background: var(--ant-color-error);
+  background: hsl(var(--destructive));
   border-radius: 9px;
 }
 
@@ -346,13 +358,14 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: hsl(var(--card));
 }
 
 .conversation-header {
   gap: 10px;
   min-height: 60px;
   padding: 0 18px;
-  border-bottom: 1px solid var(--ant-color-border-secondary);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .conversation-header h2 {
@@ -365,7 +378,7 @@ onMounted(async () => {
   margin: 0;
   font-size: 12px;
   line-height: 18px;
-  color: var(--ant-color-text-secondary);
+  color: hsl(var(--muted-foreground));
 }
 
 .history-loading {
@@ -388,7 +401,7 @@ onMounted(async () => {
   min-height: 0;
   padding: 20px;
   overflow-y: auto;
-  background: var(--ant-color-bg-layout);
+  background: hsl(var(--background-deep));
 }
 
 .message-row {
@@ -410,14 +423,17 @@ onMounted(async () => {
   line-height: 21px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-  background: var(--ant-color-bg-container);
+  color: hsl(var(--card-foreground));
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
   border-radius: 5px;
   box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
 }
 
 .mine .message-content {
-  color: #fff;
-  background: var(--ant-color-primary);
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
 }
 
 .message-state {
@@ -432,8 +448,8 @@ onMounted(async () => {
 
 .composer {
   padding: 12px 16px;
-  background: var(--ant-color-bg-container);
-  border-top: 1px solid var(--ant-color-border-secondary);
+  background: hsl(var(--card));
+  border-top: 1px solid hsl(var(--border));
 }
 
 .composer-actions {
@@ -441,7 +457,7 @@ onMounted(async () => {
   justify-content: flex-end;
   margin-top: 8px;
   font-size: 12px;
-  color: var(--ant-color-text-secondary);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 768px) {

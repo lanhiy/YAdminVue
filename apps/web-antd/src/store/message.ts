@@ -114,6 +114,7 @@ export const useMessageStore = defineStore('message', () => {
       (item) => item.peer.id === peer.id,
     );
     const isIncoming = message.receiver_id === currentUserId();
+    let isNew = true;
     if (index === -1) {
       conversations.value.unshift({
         last_message: message,
@@ -123,12 +124,12 @@ export const useMessageStore = defineStore('message', () => {
     } else {
       const conversation = conversations.value[index];
       if (!conversation) return;
-      const isNew = conversation.last_message.id !== message.id;
+      isNew = conversation.last_message.id !== message.id;
       conversation.last_message = message;
       if (isIncoming && isNew) conversation.unread_count += 1;
     }
     sortConversations();
-    if (isIncoming) unreadCount.value += 1;
+    if (isIncoming && isNew) unreadCount.value += 1;
   }
 
   function applyReadReceipt(data: Record<string, any>) {
@@ -209,6 +210,7 @@ export const useMessageStore = defineStore('message', () => {
           () => sendSocketEvent('ping'),
           25_000,
         );
+        void synchronizeAfterConnect().catch(() => undefined);
       });
       socket.onmessage = (event) => {
         try {
@@ -240,20 +242,31 @@ export const useMessageStore = defineStore('message', () => {
         getMessageConversationsApi(),
         getMessageUnreadApi(),
       ]);
-    users.value =
-      usersResult.status === 'fulfilled' && Array.isArray(usersResult.value)
-        ? usersResult.value
-        : [];
-    conversations.value =
+    if (
+      usersResult.status === 'fulfilled' &&
+      Array.isArray(usersResult.value)
+    ) {
+      users.value = usersResult.value;
+    }
+    if (
       conversationsResult.status === 'fulfilled' &&
       Array.isArray(conversationsResult.value)
-        ? conversationsResult.value
-        : [];
+    ) {
+      conversations.value = conversationsResult.value;
+    }
     sortConversations();
-    unreadCount.value =
-      unreadResult.status === 'fulfilled'
-        ? Number(unreadResult.value?.count || 0)
-        : 0;
+    if (unreadResult.status === 'fulfilled') {
+      unreadCount.value = Number(unreadResult.value?.count || 0);
+    }
+  }
+
+  async function synchronizeAfterConnect() {
+    await refresh();
+    const peerId = activePeerId.value;
+    if (peerId !== null) {
+      await loadHistory(peerId);
+      markConversationRead(peerId);
+    }
   }
 
   async function start() {
@@ -273,9 +286,15 @@ export const useMessageStore = defineStore('message', () => {
     connected.value = false;
   }
 
+  function clearSelection() {
+    activePeerId.value = null;
+    history.value = [];
+  }
+
   async function selectPeer(peerId: number) {
     if (activePeerId.value === peerId) return;
     activePeerId.value = peerId;
+    history.value = [];
     await loadHistory(peerId);
     markConversationRead(peerId);
   }
@@ -320,6 +339,7 @@ export const useMessageStore = defineStore('message', () => {
 
   return {
     activePeerId,
+    clearSelection,
     connected,
     conversations,
     history,
