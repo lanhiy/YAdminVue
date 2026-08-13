@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { NotificationItem } from '@vben/layouts';
 
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
@@ -16,48 +16,28 @@ import {
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 
-import { useAuthStore } from '#/store';
+import { useAuthStore, useMessageStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
 
 const router = useRouter();
-const notifications = ref<NotificationItem[]>([
-  {
-    avatar: 'https://avatar.vercel.sh/vercel.svg?text=VB',
-    date: '3小时前',
-    isRead: true,
-    message: '描述信息描述信息描述信息',
-    title: '收到了 14 份新周报',
-  },
-  {
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '刚刚',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '朱偏右 回复了你',
-  },
-  {
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '2024-01-01',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '曲丽丽 评论了你',
-  },
-  {
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '代办提醒',
-  },
-]);
-
 const userStore = useUserStore();
 const authStore = useAuthStore();
 const accessStore = useAccessStore();
+const messageStore = useMessageStore();
 const { destroyWatermark, updateWatermark } = useWatermark();
-const showDot = computed(() =>
-  notifications.value.some((item) => !item.isRead),
+type MessageNotification = NotificationItem & { peerId: number };
+
+const notifications = computed<MessageNotification[]>(() =>
+  messageStore.conversations.slice(0, 8).map((item) => ({
+    avatar: item.peer.avatar || preferences.app.defaultAvatar,
+    date: item.last_message.created_at,
+    isRead: item.unread_count === 0,
+    message: item.last_message.content,
+    peerId: item.peer.id,
+    title: item.peer.nickname,
+  })),
 );
+const showDot = computed(() => messageStore.unreadCount > 0);
 
 // ✅ 添加个人设置菜单项
 const menus = computed(() => [
@@ -109,15 +89,30 @@ const avatar = computed(() => {
 });
 
 async function handleLogout() {
+  messageStore.stop();
   await authStore.logout({ redirect: false });
 }
 
 function handleNoticeClear() {
-  notifications.value = [];
+  Promise.all(
+    messageStore.conversations
+      .filter((item) => item.unread_count > 0)
+      .map((item) => messageStore.markConversationRead(item.peer.id)),
+  );
 }
 
 function handleMakeAll() {
-  notifications.value.forEach((item) => (item.isRead = true));
+  handleNoticeClear();
+}
+
+function handleNotificationRead(item: NotificationItem) {
+  const peerId = (item as MessageNotification).peerId;
+  messageStore.markConversationRead(peerId);
+  router.push({ path: '/message', query: { peerId } });
+}
+
+function handleViewAll() {
+  router.push('/message');
 }
 
 watch(
@@ -140,6 +135,10 @@ watch(
     immediate: true,
   },
 );
+
+onMounted(() => {
+  messageStore.start();
+});
 </script>
 
 <template>
@@ -160,6 +159,8 @@ watch(
         :notifications="notifications"
         @clear="handleNoticeClear"
         @make-all="handleMakeAll"
+        @read="handleNotificationRead"
+        @view-all="handleViewAll"
       />
     </template>
     <template #extra>
