@@ -2,7 +2,7 @@
 import type { MessageUser } from '#/api';
 
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 import { useUserStore } from '@vben/stores';
@@ -15,14 +15,18 @@ import {
   message,
   Spin,
   Tag,
+  Tooltip,
 } from 'ant-design-vue';
 import dayjs from 'dayjs';
+
+import { X } from '@vben/icons';
 
 import { useMessageStore } from '#/store';
 
 const messageStore = useMessageStore();
 const userStore = useUserStore();
 const route = useRoute();
+const router = useRouter();
 const draft = ref('');
 const sending = ref(false);
 const messageListRef = ref<HTMLElement>();
@@ -60,10 +64,11 @@ const contacts = computed(() => {
 });
 
 function avatarOf(user?: MessageUser) {
-  return (
-    user?.avatar ||
-    `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user?.nickname || user?.username || 'Y')}`
-  );
+  return user?.avatar || undefined;
+}
+
+function avatarText(user?: MessageUser) {
+  return (user?.nickname || user?.username || '?').slice(-2).toUpperCase();
 }
 
 function formatTime(value: string) {
@@ -109,6 +114,13 @@ function handleEnter(event: KeyboardEvent) {
   send();
 }
 
+function closeConversation() {
+  draft.value = '';
+  messageStore.clearSelection();
+  const { peerId: _peerId, ...query } = route.query;
+  void router.replace({ path: route.path, query });
+}
+
 watch(() => messageStore.history.length, scrollToBottom);
 
 async function selectRoutePeer(value: unknown) {
@@ -152,7 +164,9 @@ onMounted(async () => {
             type="button"
             @click="selectPeer(item.peer.id)"
           >
-            <Avatar :src="avatarOf(item.peer)" :size="40" />
+            <Avatar :src="avatarOf(item.peer)" :size="40">{{
+              avatarText(item.peer)
+            }}</Avatar>
             <span class="contact-main">
               <span class="contact-name">{{ item.peer.nickname }}</span>
               <span class="contact-preview">{{
@@ -185,11 +199,25 @@ onMounted(async () => {
       <section class="conversation-panel">
         <template v-if="selectedPeer">
           <header class="conversation-header">
-            <Avatar :src="avatarOf(selectedPeer)" :size="36" />
-            <div>
-              <h2>{{ selectedPeer.nickname }}</h2>
-              <p>{{ selectedPeer.username }}</p>
+            <div class="conversation-peer">
+              <Avatar :src="avatarOf(selectedPeer)" :size="36">{{
+                avatarText(selectedPeer)
+              }}</Avatar>
+              <div>
+                <h2>{{ selectedPeer.nickname }}</h2>
+                <p>{{ selectedPeer.username }}</p>
+              </div>
             </div>
+            <Tooltip title="关闭会话">
+              <Button
+                aria-label="关闭会话"
+                class="close-conversation"
+                type="text"
+                @click="closeConversation"
+              >
+                <X :size="18" />
+              </Button>
+            </Tooltip>
           </header>
           <Spin :spinning="messageStore.historyLoading" class="history-loading">
             <div ref="messageListRef" class="message-list">
@@ -199,7 +227,9 @@ onMounted(async () => {
                 class="message-row"
                 :class="{ mine: item.sender_id === currentUserId }"
               >
-                <Avatar :src="avatarOf(item.sender)" :size="32" />
+                <Avatar :src="avatarOf(item.sender)" :size="32">{{
+                  avatarText(item.sender)
+                }}</Avatar>
                 <div class="message-body">
                   <div class="message-content">{{ item.content }}</div>
                   <div class="message-state">
@@ -241,7 +271,9 @@ onMounted(async () => {
             </div>
           </footer>
         </template>
-        <Empty v-else description="选择一位联系人开始沟通" />
+        <div v-else class="conversation-empty">
+          <Empty description="选择一位联系人开始沟通" />
+        </div>
       </section>
     </div>
   </Page>
@@ -362,10 +394,32 @@ onMounted(async () => {
 }
 
 .conversation-header {
-  gap: 10px;
+  justify-content: space-between;
   min-height: 60px;
   padding: 0 18px;
   border-bottom: 1px solid hsl(var(--border));
+}
+
+.conversation-peer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.close-conversation {
+  display: inline-flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: hsl(var(--muted-foreground));
+}
+
+.close-conversation:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--accent));
 }
 
 .conversation-header h2 {
@@ -379,6 +433,14 @@ onMounted(async () => {
   font-size: 12px;
   line-height: 18px;
   color: hsl(var(--muted-foreground));
+}
+
+.conversation-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 .history-loading {
