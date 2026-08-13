@@ -35,16 +35,17 @@ const selectedPeer = computed<MessageUser | undefined>(() => {
   const peerId = selectedPeerId.value;
   if (!peerId) return undefined;
   return (
-    messageStore.users.find((item) => item.id === peerId) ??
-    messageStore.conversations.find((item) => item.peer.id === peerId)?.peer
+    (messageStore.users ?? []).find((item) => item.id === peerId) ??
+    (messageStore.conversations ?? []).find((item) => item.peer.id === peerId)
+      ?.peer
   );
 });
 
 const contacts = computed(() => {
   const conversations = new Map(
-    messageStore.conversations.map((item) => [item.peer.id, item]),
+    (messageStore.conversations ?? []).map((item) => [item.peer.id, item]),
   );
-  return [...messageStore.users]
+  return [...(messageStore.users ?? [])]
     .sort((first, second) => {
       const firstSequence =
         conversations.get(first.id)?.last_message.sequence || 0;
@@ -115,7 +116,8 @@ onMounted(async () => {
   const queryPeer = Number(route.query.peerId || 0);
   const initialPeer = queryPeer > 0
     ? queryPeer
-    : messageStore.conversations[0]?.peer.id ?? messageStore.users[0]?.id;
+    : (messageStore.conversations ?? [])[0]?.peer.id
+      ?? (messageStore.users ?? [])[0]?.id;
   if (initialPeer) await selectPeer(initialPeer);
 });
 </script>

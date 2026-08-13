@@ -85,7 +85,7 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   function sortConversations() {
-    conversations.value.sort(
+    conversations.value = [...(conversations.value ?? [])].sort(
       (first, second) =>
         second.last_message.sequence - first.last_message.sequence,
     );
@@ -234,26 +234,34 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   async function refresh() {
-    const [messageUsers, messageConversations, unread] = await Promise.all([
-      getMessageUsersApi(),
-      getMessageConversationsApi(),
-      getMessageUnreadApi(),
-    ]);
-    users.value = messageUsers;
-    conversations.value = messageConversations;
+    const [usersResult, conversationsResult, unreadResult] =
+      await Promise.allSettled([
+        getMessageUsersApi(),
+        getMessageConversationsApi(),
+        getMessageUnreadApi(),
+      ]);
+    users.value =
+      usersResult.status === 'fulfilled' && Array.isArray(usersResult.value)
+        ? usersResult.value
+        : [];
+    conversations.value =
+      conversationsResult.status === 'fulfilled' &&
+      Array.isArray(conversationsResult.value)
+        ? conversationsResult.value
+        : [];
     sortConversations();
-    unreadCount.value = unread.count;
+    unreadCount.value =
+      unreadResult.status === 'fulfilled'
+        ? Number(unreadResult.value?.count || 0)
+        : 0;
   }
 
   async function start() {
     if (started.value) return;
     started.value = true;
     stopped = false;
-    try {
-      await refresh();
-    } finally {
-      connect();
-    }
+    await refresh();
+    connect();
   }
 
   function stop() {

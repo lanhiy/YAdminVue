@@ -28,7 +28,7 @@ const { destroyWatermark, updateWatermark } = useWatermark();
 type MessageNotification = NotificationItem & { peerId: number };
 
 const notifications = computed<MessageNotification[]>(() =>
-  messageStore.conversations.slice(0, 8).map((item) => ({
+  (messageStore.conversations ?? []).slice(0, 8).map((item) => ({
     avatar: item.peer.avatar || preferences.app.defaultAvatar,
     date: item.last_message.created_at,
     isRead: item.unread_count === 0,
@@ -95,7 +95,7 @@ async function handleLogout() {
 
 function handleNoticeClear() {
   Promise.all(
-    messageStore.conversations
+    (messageStore.conversations ?? [])
       .filter((item) => item.unread_count > 0)
       .map((item) => messageStore.markConversationRead(item.peer.id)),
   );

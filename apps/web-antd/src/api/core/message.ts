@@ -40,14 +40,18 @@ export function createMessageWebSocketTicketApi() {
   return requestClient.post<WebSocketTicket>('/system/message/ticket');
 }
 
-export function getMessageUsersApi() {
-  return requestClient.get<MessageUser[]>('/system/message/users');
+export async function getMessageUsersApi() {
+  const data = await requestClient.get<MessageUser[] | null>(
+    '/system/message/users',
+  );
+  return data ?? [];
 }
 
-export function getMessageConversationsApi() {
-  return requestClient.get<MessageConversation[]>(
+export async function getMessageConversationsApi() {
+  const data = await requestClient.get<MessageConversation[] | null>(
     '/system/message/conversations',
   );
+  return data ?? [];
 }
 
 export function getMessageUnreadApi() {
