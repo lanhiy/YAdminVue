@@ -5,6 +5,7 @@ import type { MenuRecordRaw } from '@vben-core/typings';
 import { acceptHMRUpdate, defineStore } from 'pinia';
 
 type AccessToken = null | string;
+type AccessTokenExpiresAt = null | number;
 
 interface AccessState {
   /**
@@ -23,6 +24,10 @@ interface AccessState {
    * 登录 accessToken
    */
   accessToken: AccessToken;
+  /**
+   * accessToken 的 Unix 过期时间（秒）
+   */
+  accessTokenExpiresAt: AccessTokenExpiresAt;
   /**
    * 是否已经检查过权限
    */
@@ -82,8 +87,23 @@ export const useAccessStore = defineStore('core-access', {
     setAccessRoutes(routes: RouteRecordRaw[]) {
       this.accessRoutes = routes;
     },
-    setAccessToken(token: AccessToken) {
+    isAccessTokenExpired(safetyWindowSeconds: number = 5) {
+      if (!this.accessToken) {
+        return false;
+      }
+
+      if (!this.accessTokenExpiresAt) {
+        return true;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      return (
+        this.accessTokenExpiresAt <= now + Math.max(0, safetyWindowSeconds)
+      );
+    },
+    setAccessToken(token: AccessToken, expiresAt: AccessTokenExpiresAt = null) {
       this.accessToken = token;
+      this.accessTokenExpiresAt = token ? expiresAt : null;
     },
     setIsAccessChecked(isAccessChecked: boolean) {
       this.isAccessChecked = isAccessChecked;
@@ -103,6 +123,7 @@ export const useAccessStore = defineStore('core-access', {
     // 持久化
     pick: [
       'accessToken',
+      'accessTokenExpiresAt',
       'refreshToken',
       'accessCodes',
       'isLockScreen',
@@ -114,6 +135,7 @@ export const useAccessStore = defineStore('core-access', {
     accessMenus: [],
     accessRoutes: [],
     accessToken: null,
+    accessTokenExpiresAt: null,
     isAccessChecked: false,
     isLockScreen: false,
     lockScreenPassword: undefined,

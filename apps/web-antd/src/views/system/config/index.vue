@@ -1,9 +1,32 @@
 <!-- src/views/system/config/index.vue -->
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import type { SystemConfigInfo } from '#/api';
+
+import { onMounted, reactive, ref } from 'vue';
+
 import { Page } from '@vben/common-ui';
-import { Card, Tabs, TabPane, Form, FormItem, Input, InputNumber, Select, SelectOption, Radio, RadioGroup, Switch, Button, message, Slider } from 'ant-design-vue';
-import { getSystemConfigApi, updateSystemConfigApi, type SystemConfigInfo } from '#/api';
+import { updatePreferences } from '@vben/preferences';
+
+import {
+  Button,
+  Card,
+  Form,
+  FormItem,
+  Input,
+  InputNumber,
+  message,
+  Radio,
+  RadioGroup,
+  Select,
+  SelectOption,
+  Slider,
+  Switch,
+  TabPane,
+  Tabs,
+} from 'ant-design-vue';
+
+import { getSystemConfigApi, updateSystemConfigApi } from '#/api';
+import { transformConfigToSystemPreferences } from '#/utils/config-transform';
 
 // 数据
 const loading = ref(false);
@@ -47,7 +70,7 @@ const formData = reactive<SystemConfigInfo>({
   copyright_icp_link: '',
 
   // 布局配置
-  layout_type: 'sidebar',
+  layout_type: 'sidebar-nav',
   content_compact: 'wide',
   content_compact_width: 1200,
 
@@ -98,6 +121,7 @@ const handleSubmit = async () => {
     await formRef.value?.validate();
     loading.value = true;
     await updateSystemConfigApi(formData);
+    updatePreferences(transformConfigToSystemPreferences(formData));
     message.success('保存成功');
     await loadConfig();
   } catch (error: any) {
@@ -117,11 +141,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Page
-    auto-content-height
-    description="系统全局配置管理"
-    title="系统配置"
-  >
+  <Page auto-content-height description="系统全局配置管理" title="系统配置">
     <Card :loading="loading">
       <Tabs v-model:active-key="activeTab">
         <!-- 应用配置 -->
@@ -137,7 +157,10 @@ onMounted(() => {
               name="app_name"
               :rules="[{ required: true, message: '请输入应用名称' }]"
             >
-              <Input v-model:value="formData.app_name" placeholder="请输入应用名称" />
+              <Input
+                v-model:value="formData.app_name"
+                placeholder="请输入应用名称"
+              />
             </FormItem>
 
             <FormItem
@@ -145,7 +168,10 @@ onMounted(() => {
               name="app_default_home_path"
               :rules="[{ required: true, message: '请输入默认首页路径' }]"
             >
-              <Input v-model:value="formData.app_default_home_path" placeholder="例如: /dashboard" />
+              <Input
+                v-model:value="formData.app_default_home_path"
+                placeholder="例如: /dashboard"
+              />
               <template #extra>用户登录后默认跳转的页面路径</template>
             </FormItem>
 
@@ -164,7 +190,10 @@ onMounted(() => {
             </FormItem>
 
             <FormItem label="默认语言" name="app_locale">
-              <Select v-model:value="formData.app_locale" placeholder="请选择默认语言">
+              <Select
+                v-model:value="formData.app_locale"
+                placeholder="请选择默认语言"
+              >
                 <SelectOption value="zh-CN">简体中文</SelectOption>
                 <SelectOption value="en-US">English</SelectOption>
               </Select>
@@ -174,12 +203,22 @@ onMounted(() => {
               <Switch v-model:checked="formData.app_watermark" />
             </FormItem>
 
-            <FormItem v-if="formData.app_watermark" label="水印内容" name="app_watermark_content">
-              <Input v-model:value="formData.app_watermark_content" placeholder="请输入水印文字" />
+            <FormItem
+              v-if="formData.app_watermark"
+              label="水印内容"
+              name="app_watermark_content"
+            >
+              <Input
+                v-model:value="formData.app_watermark_content"
+                placeholder="请输入水印文字"
+              />
             </FormItem>
 
             <FormItem label="默认头像" name="app_default_avatar">
-              <Input v-model:value="formData.app_default_avatar" placeholder="请输入默认头像URL" />
+              <Input
+                v-model:value="formData.app_default_avatar"
+                placeholder="请输入默认头像URL"
+              />
               <template #extra>用户未设置头像时显示的默认图片</template>
             </FormItem>
 
@@ -216,24 +255,43 @@ onMounted(() => {
             </FormItem>
 
             <FormItem label="主色调" name="theme_color_primary">
-              <Input v-model:value="formData.theme_color_primary" type="color" style="width: 100px;" />
+              <Input
+                v-model:value="formData.theme_color_primary"
+                type="color"
+                style="width: 100px"
+              />
               <template #extra>系统主题色，例如按钮、链接等元素的颜色</template>
             </FormItem>
 
             <FormItem label="成功色" name="theme_color_success">
-              <Input v-model:value="formData.theme_color_success" type="color" style="width: 100px;" />
+              <Input
+                v-model:value="formData.theme_color_success"
+                type="color"
+                style="width: 100px"
+              />
             </FormItem>
 
             <FormItem label="警告色" name="theme_color_warning">
-              <Input v-model:value="formData.theme_color_warning" type="color" style="width: 100px;" />
+              <Input
+                v-model:value="formData.theme_color_warning"
+                type="color"
+                style="width: 100px"
+              />
             </FormItem>
 
             <FormItem label="危险色" name="theme_color_destructive">
-              <Input v-model:value="formData.theme_color_destructive" type="color" style="width: 100px;" />
+              <Input
+                v-model:value="formData.theme_color_destructive"
+                type="color"
+                style="width: 100px"
+              />
             </FormItem>
 
             <FormItem label="内置主题" name="theme_builtin_type">
-              <Select v-model:value="formData.theme_builtin_type" placeholder="请选择内置主题">
+              <Select
+                v-model:value="formData.theme_builtin_type"
+                placeholder="请选择内置主题"
+              >
                 <SelectOption value="default">默认主题</SelectOption>
                 <SelectOption value="dark">暗黑主题</SelectOption>
                 <SelectOption value="blue">蓝色主题</SelectOption>
@@ -245,7 +303,13 @@ onMounted(() => {
                 v-model:value="formData.theme_radius"
                 :min="0"
                 :max="20"
-                :marks="{ 0: '0px', 5: '5px', 10: '10px', 15: '15px', 20: '20px' }"
+                :marks="{
+                  0: '0px',
+                  5: '5px',
+                  10: '10px',
+                  15: '15px',
+                  20: '20px',
+                }"
               />
               <template #extra>组件圆角的大小，单位为像素</template>
             </FormItem>
@@ -267,9 +331,9 @@ onMounted(() => {
           >
             <FormItem label="布局类型" name="layout_type">
               <RadioGroup v-model:value="formData.layout_type">
-                <Radio value="sidebar">侧边菜单布局</Radio>
-                <Radio value="header">顶部菜单布局</Radio>
-                <Radio value="mix">混合布局</Radio>
+                <Radio value="sidebar-nav">侧边菜单布局</Radio>
+                <Radio value="header-nav">顶部菜单布局</Radio>
+                <Radio value="mixed-nav">混合布局</Radio>
               </RadioGroup>
             </FormItem>
 
@@ -280,7 +344,11 @@ onMounted(() => {
               </RadioGroup>
             </FormItem>
 
-            <FormItem v-if="formData.content_compact === 'compact'" label="紧凑模式宽度" name="content_compact_width">
+            <FormItem
+              v-if="formData.content_compact === 'compact'"
+              label="紧凑模式宽度"
+              name="content_compact_width"
+            >
               <InputNumber
                 v-model:value="formData.content_compact_width"
                 :min="800"
@@ -309,12 +377,26 @@ onMounted(() => {
               <Switch v-model:checked="formData.logo_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.logo_enable" label="Logo图片地址" name="logo_source">
-              <Input v-model:value="formData.logo_source" placeholder="请输入Logo图片URL" />
+            <FormItem
+              v-if="formData.logo_enable"
+              label="Logo图片地址"
+              name="logo_source"
+            >
+              <Input
+                v-model:value="formData.logo_source"
+                placeholder="请输入Logo图片URL"
+              />
             </FormItem>
 
-            <FormItem v-if="formData.logo_enable" label="图片适应方式" name="logo_fit">
-              <Select v-model:value="formData.logo_fit" placeholder="请选择图片适应方式">
+            <FormItem
+              v-if="formData.logo_enable"
+              label="图片适应方式"
+              name="logo_fit"
+            >
+              <Select
+                v-model:value="formData.logo_fit"
+                placeholder="请选择图片适应方式"
+              >
                 <SelectOption value="fill">填充</SelectOption>
                 <SelectOption value="contain">包含</SelectOption>
                 <SelectOption value="cover">覆盖</SelectOption>
@@ -342,24 +424,59 @@ onMounted(() => {
               <Switch v-model:checked="formData.copyright_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.copyright_enable" label="公司名称" name="copyright_company_name">
-              <Input v-model:value="formData.copyright_company_name" placeholder="请输入公司名称" />
+            <FormItem
+              v-if="formData.copyright_enable"
+              label="公司名称"
+              name="copyright_company_name"
+            >
+              <Input
+                v-model:value="formData.copyright_company_name"
+                placeholder="请输入公司名称"
+              />
             </FormItem>
 
-            <FormItem v-if="formData.copyright_enable" label="公司网站链接" name="copyright_company_site_link">
-              <Input v-model:value="formData.copyright_company_site_link" placeholder="https://example.com" />
+            <FormItem
+              v-if="formData.copyright_enable"
+              label="公司网站链接"
+              name="copyright_company_site_link"
+            >
+              <Input
+                v-model:value="formData.copyright_company_site_link"
+                placeholder="https://example.com"
+              />
             </FormItem>
 
-            <FormItem v-if="formData.copyright_enable" label="版权年份" name="copyright_date">
-              <Input v-model:value="formData.copyright_date" placeholder="2024" />
+            <FormItem
+              v-if="formData.copyright_enable"
+              label="版权年份"
+              name="copyright_date"
+            >
+              <Input
+                v-model:value="formData.copyright_date"
+                placeholder="2024"
+              />
             </FormItem>
 
-            <FormItem v-if="formData.copyright_enable" label="ICP备案号" name="copyright_icp">
-              <Input v-model:value="formData.copyright_icp" placeholder="京ICP备xxxxxxxx号" />
+            <FormItem
+              v-if="formData.copyright_enable"
+              label="ICP备案号"
+              name="copyright_icp"
+            >
+              <Input
+                v-model:value="formData.copyright_icp"
+                placeholder="京ICP备xxxxxxxx号"
+              />
             </FormItem>
 
-            <FormItem v-if="formData.copyright_enable" label="ICP备案链接" name="copyright_icp_link">
-              <Input v-model:value="formData.copyright_icp_link" placeholder="https://beian.miit.gov.cn" />
+            <FormItem
+              v-if="formData.copyright_enable"
+              label="ICP备案链接"
+              name="copyright_icp_link"
+            >
+              <Input
+                v-model:value="formData.copyright_icp_link"
+                placeholder="https://beian.miit.gov.cn"
+              />
             </FormItem>
 
             <FormItem :wrapper-col="{ offset: 5 }">
@@ -381,7 +498,11 @@ onMounted(() => {
               <Switch v-model:checked="formData.header_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.header_enable" label="头部高度" name="header_height">
+            <FormItem
+              v-if="formData.header_enable"
+              label="头部高度"
+              name="header_height"
+            >
               <InputNumber
                 v-model:value="formData.header_height"
                 :min="48"
@@ -391,7 +512,11 @@ onMounted(() => {
               />
             </FormItem>
 
-            <FormItem v-if="formData.header_enable" label="头部模式" name="header_mode">
+            <FormItem
+              v-if="formData.header_enable"
+              label="头部模式"
+              name="header_mode"
+            >
               <RadioGroup v-model:value="formData.header_mode">
                 <Radio value="fixed">固定</Radio>
                 <Radio value="static">静态</Radio>
@@ -417,7 +542,11 @@ onMounted(() => {
               <Switch v-model:checked="formData.sidebar_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.sidebar_enable" label="侧边栏宽度" name="sidebar_width">
+            <FormItem
+              v-if="formData.sidebar_enable"
+              label="侧边栏宽度"
+              name="sidebar_width"
+            >
               <InputNumber
                 v-model:value="formData.sidebar_width"
                 :min="180"
@@ -427,11 +556,19 @@ onMounted(() => {
               />
             </FormItem>
 
-            <FormItem v-if="formData.sidebar_enable" label="显示折叠按钮" name="sidebar_collapsed_button">
+            <FormItem
+              v-if="formData.sidebar_enable"
+              label="显示折叠按钮"
+              name="sidebar_collapsed_button"
+            >
               <Switch v-model:checked="formData.sidebar_collapsed_button" />
             </FormItem>
 
-            <FormItem v-if="formData.sidebar_enable" label="鼠标悬停展开" name="sidebar_expand_on_hover">
+            <FormItem
+              v-if="formData.sidebar_enable"
+              label="鼠标悬停展开"
+              name="sidebar_expand_on_hover"
+            >
               <Switch v-model:checked="formData.sidebar_expand_on_hover" />
               <template #extra>侧边栏折叠时，鼠标悬停是否自动展开</template>
             </FormItem>
@@ -455,21 +592,37 @@ onMounted(() => {
               <Switch v-model:checked="formData.tabbar_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.tabbar_enable" label="页面缓存" name="tabbar_keep_alive">
+            <FormItem
+              v-if="formData.tabbar_enable"
+              label="页面缓存"
+              name="tabbar_keep_alive"
+            >
               <Switch v-model:checked="formData.tabbar_keep_alive" />
               <template #extra>切换标签页时是否缓存页面状态</template>
             </FormItem>
 
-            <FormItem v-if="formData.tabbar_enable" label="持久化标签页" name="tabbar_persist">
+            <FormItem
+              v-if="formData.tabbar_enable"
+              label="持久化标签页"
+              name="tabbar_persist"
+            >
               <Switch v-model:checked="formData.tabbar_persist" />
               <template #extra>刷新页面后是否保留标签页</template>
             </FormItem>
 
-            <FormItem v-if="formData.tabbar_enable" label="显示图标" name="tabbar_show_icon">
+            <FormItem
+              v-if="formData.tabbar_enable"
+              label="显示图标"
+              name="tabbar_show_icon"
+            >
               <Switch v-model:checked="formData.tabbar_show_icon" />
             </FormItem>
 
-            <FormItem v-if="formData.tabbar_enable" label="标签页样式" name="tabbar_style_type">
+            <FormItem
+              v-if="formData.tabbar_enable"
+              label="标签页样式"
+              name="tabbar_style_type"
+            >
               <RadioGroup v-model:value="formData.tabbar_style_type">
                 <Radio value="card">卡片式</Radio>
                 <Radio value="button">按钮式</Radio>
@@ -496,11 +649,19 @@ onMounted(() => {
               <Switch v-model:checked="formData.breadcrumb_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.breadcrumb_enable" label="显示图标" name="breadcrumb_show_icon">
+            <FormItem
+              v-if="formData.breadcrumb_enable"
+              label="显示图标"
+              name="breadcrumb_show_icon"
+            >
               <Switch v-model:checked="formData.breadcrumb_show_icon" />
             </FormItem>
 
-            <FormItem v-if="formData.breadcrumb_enable" label="显示首页" name="breadcrumb_show_home">
+            <FormItem
+              v-if="formData.breadcrumb_enable"
+              label="显示首页"
+              name="breadcrumb_show_home"
+            >
               <Switch v-model:checked="formData.breadcrumb_show_home" />
               <template #extra>是否在面包屑中显示首页链接</template>
             </FormItem>
@@ -524,7 +685,11 @@ onMounted(() => {
               <Switch v-model:checked="formData.footer_enable" />
             </FormItem>
 
-            <FormItem v-if="formData.footer_enable" label="页脚高度" name="footer_height">
+            <FormItem
+              v-if="formData.footer_enable"
+              label="页脚高度"
+              name="footer_height"
+            >
               <InputNumber
                 v-model:value="formData.footer_height"
                 :min="32"

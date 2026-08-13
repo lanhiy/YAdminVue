@@ -30,6 +30,19 @@ describe('preferences', () => {
     expect(preferences).toEqual(defaultPreferences);
   });
 
+  it('detects whether preferences existed before initialization', async () => {
+    const namespace = 'cached-preferences-test';
+    localStorage.setItem(
+      `${namespace}-preferences`,
+      JSON.stringify({ value: defaultPreferences }),
+    );
+
+    await preferenceManager.initPreferences({ namespace });
+
+    expect(preferenceManager.hasCachedPreferences()).toBe(true);
+    preferenceManager.clearCache();
+  });
+
   it('initializes preferences with overrides', async () => {
     const overrides: any = {
       app: {

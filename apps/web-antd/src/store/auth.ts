@@ -33,11 +33,11 @@ export const useAuthStore = defineStore('auth', () => {
     let userInfo: null | UserInfo = null;
     try {
       loginLoading.value = true;
-      const { accessToken } = await loginApi(params);
+      const { accessToken, expiresAt } = await loginApi(params);
 
       // 如果成功获取到 accessToken
       if (accessToken) {
-        accessStore.setAccessToken(accessToken);
+        accessStore.setAccessToken(accessToken, expiresAt);
 
         // 获取用户信息并存储到 accessStore 中
         const [fetchUserInfoResult, accessCodes] = await Promise.all([
@@ -77,11 +77,17 @@ export const useAuthStore = defineStore('auth', () => {
     };
   }
 
-  async function logout(redirect: boolean = true) {
-    try {
-      await logoutApi();
-    } catch {
-      // 不做任何处理
+  async function logout(
+    options: { notifyServer?: boolean; redirect?: boolean } = {},
+  ) {
+    const { notifyServer = true, redirect = true } = options;
+
+    if (notifyServer) {
+      try {
+        await logoutApi();
+      } catch {
+        // 服务端退出失败不影响本地会话清理
+      }
     }
     resetAllStores();
     accessStore.setLoginExpired(false);

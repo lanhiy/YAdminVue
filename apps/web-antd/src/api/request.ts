@@ -7,6 +7,7 @@ import { useAppConfig } from '@vben/hooks';
 import { preferences } from '@vben/preferences';
 import {
   authenticateResponseInterceptor,
+  CanceledError,
   defaultResponseInterceptor,
   errorMessageResponseInterceptor,
   RequestClient,
@@ -26,23 +27,30 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     ...options,
     baseURL,
   });
+  let reAuthenticatePromise: null | Promise<void> = null;
 
   /**
    * 重新认证逻辑
    */
   async function doReAuthenticate() {
-    console.warn('Access token or refresh token is invalid or expired. ');
     const accessStore = useAccessStore();
+    if (!accessStore.accessToken) {
+      return;
+    }
+
+    console.warn('Access token or refresh token is invalid or expired. ');
     const authStore = useAuthStore();
     accessStore.setAccessToken(null);
-    if (
-      preferences.app.loginExpiredMode === 'modal' &&
-      accessStore.isAccessChecked
-    ) {
-      accessStore.setLoginExpired(true);
-    } else {
-      await authStore.logout();
+    await authStore.logout({ notifyServer: false });
+  }
+
+  async function reAuthenticateOnce() {
+    if (reAuthenticatePromise === null) {
+      reAuthenticatePromise = doReAuthenticate().finally(() => {
+        reAuthenticatePromise = null;
+      });
     }
+    await reAuthenticatePromise;
   }
 
   /**
@@ -65,7 +73,19 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
 
-      config.headers.Authorization = formatToken(accessStore.accessToken);
+      if (config.authRequired !== false && !accessStore.accessToken) {
+        throw new CanceledError('Access token missing');
+      }
+
+      if (config.authRequired !== false && accessStore.isAccessTokenExpired()) {
+        await reAuthenticateOnce();
+        throw new CanceledError('Access token expired');
+      }
+
+      config.headers.Authorization =
+        config.authRequired === false
+          ? null
+          : formatToken(accessStore.accessToken);
       config.headers['Accept-Language'] = preferences.app.locale;
       return config;
     },
@@ -84,7 +104,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addResponseInterceptor(
     authenticateResponseInterceptor({
       client,
-      doReAuthenticate,
+      doReAuthenticate: reAuthenticateOnce,
       doRefreshToken,
       enableRefreshToken: preferences.app.enableRefreshToken,
       formatToken,

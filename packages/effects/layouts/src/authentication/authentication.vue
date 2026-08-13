@@ -94,6 +94,7 @@ const logoSrc = computed(() => {
             :alt="appName"
             :src="logoSrc"
             class="mr-2"
+            referrerpolicy="no-referrer"
             width="42"
           />
           <p v-if="appName" class="m-0 text-xl font-medium">

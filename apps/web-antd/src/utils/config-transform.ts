@@ -1,13 +1,16 @@
+import type { InitialOptions } from '@vben/preferences';
+
 // src/utils/config-transform.ts
 import type { SystemConfigInfo } from '#/api';
-import type { PreferencesType } from '@vben/preferences';
+
+type PreferenceOverrides = NonNullable<InitialOptions['overrides']>;
 
 /**
  * 将后端配置转换为前端 preferences 格式
  */
 export function transformConfigToPreferences(
   config: SystemConfigInfo,
-): Partial<PreferencesType> {
+): PreferenceOverrides {
   return {
     // 🔥 只保留一个 app 对象，合并所有配置
     app: {
@@ -74,6 +77,40 @@ export function transformConfigToPreferences(
     footer: {
       enable: config.footer_enable,
       height: config.footer_height,
+    },
+  };
+}
+
+/**
+ * 管理员统一控制的配置。已有本地偏好时，只强制覆盖这些字段。
+ */
+export function transformConfigToSystemPreferences(
+  config: SystemConfigInfo,
+): PreferenceOverrides {
+  return {
+    app: {
+      name: config.app_name,
+      defaultHomePath: config.app_default_home_path,
+      accessMode: config.app_access_mode,
+      loginExpiredMode: config.app_login_expired_mode,
+      watermark: config.app_watermark,
+      watermarkContent: config.app_watermark_content,
+      defaultAvatar: config.app_default_avatar,
+      enableRefreshToken: config.app_enable_refresh_token,
+      dynamicTitle: config.app_dynamic_title,
+    },
+    logo: {
+      enable: config.logo_enable,
+      source: config.logo_source,
+      fit: config.logo_fit,
+    },
+    copyright: {
+      enable: config.copyright_enable,
+      companyName: config.copyright_company_name,
+      companySiteLink: config.copyright_company_site_link,
+      date: config.copyright_date,
+      icp: config.copyright_icp,
+      icpLink: config.copyright_icp_link,
     },
   };
 }

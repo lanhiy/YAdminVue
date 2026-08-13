@@ -1,3 +1,11 @@
+import type {
+  AppPreferences,
+  HeaderPreferences,
+  LogoPreferences,
+  TabbarPreferences,
+  ThemePreferences,
+} from '@vben/preferences';
+
 // src/api/system/config.ts
 import { requestClient } from '#/api/request';
 
@@ -8,9 +16,9 @@ export interface SystemConfigInfo {
   // 应用配置
   app_name: string;
   app_default_home_path: string;
-  app_access_mode: 'frontend' | 'backend';
+  app_access_mode: 'backend' | 'frontend';
   app_login_expired_mode: 'modal' | 'page';
-  app_locale: string;
+  app_locale: AppPreferences['locale'];
   app_watermark: boolean;
   app_watermark_content: string;
   app_default_avatar: string;
@@ -20,15 +28,15 @@ export interface SystemConfigInfo {
   // Logo配置
   logo_enable: boolean;
   logo_source: string;
-  logo_fit: string;
+  logo_fit: LogoPreferences['fit'];
 
   // 主题配置
-  theme_mode: 'light' | 'dark' | 'auto';
+  theme_mode: 'auto' | 'dark' | 'light';
   theme_color_primary: string;
   theme_color_success: string;
   theme_color_warning: string;
   theme_color_destructive: string;
-  theme_builtin_type: string;
+  theme_builtin_type: ThemePreferences['builtinType'];
   theme_radius: string;
 
   // 版权配置
@@ -40,8 +48,8 @@ export interface SystemConfigInfo {
   copyright_icp_link: string;
 
   // 布局配置
-  layout_type: string;
-  content_compact: string;
+  layout_type: AppPreferences['layout'];
+  content_compact: AppPreferences['contentCompact'];
   content_compact_width: number;
 
   // 标签页配置
@@ -49,7 +57,7 @@ export interface SystemConfigInfo {
   tabbar_keep_alive: boolean;
   tabbar_persist: boolean;
   tabbar_show_icon: boolean;
-  tabbar_style_type: string;
+  tabbar_style_type: TabbarPreferences['styleType'];
 
   // 侧边栏配置
   sidebar_enable: boolean;
@@ -60,7 +68,7 @@ export interface SystemConfigInfo {
   // 头部配置
   header_enable: boolean;
   header_height: number;
-  header_mode: string;
+  header_mode: HeaderPreferences['mode'];
 
   // 面包屑配置
   breadcrumb_enable: boolean;
@@ -76,7 +84,9 @@ export interface SystemConfigInfo {
  * 获取系统配置
  */
 export async function getSystemConfigApi() {
-  return requestClient.get<SystemConfigInfo>('/system/config');
+  return requestClient.get<SystemConfigInfo>('/system/config', {
+    authRequired: false,
+  });
 }
 
 /**

@@ -78,6 +78,7 @@ const logoSrc = computed(() => {
         :src="logoSrc"
         :size="logoSize"
         :fit="fit"
+        referrer-policy="no-referrer"
         class="relative rounded-none bg-transparent"
       />
       <template v-if="!collapsed">

@@ -22,6 +22,7 @@ const STORAGE_KEY_THEME = `${STORAGE_KEY}-theme`;
 
 class PreferenceManager {
   private cache: null | StorageManager = null;
+  private hadCachedPreferences: boolean = false;
   // private flattenedState: Flatten<Preferences>;
   private initialPreferences: Preferences = defaultPreferences;
   private isInitialized: boolean = false;
@@ -53,6 +54,10 @@ class PreferenceManager {
     return readonly(this.state);
   }
 
+  public hasCachedPreferences() {
+    return this.hadCachedPreferences;
+  }
+
   /**
    * 覆盖偏好设置
    * overrides  要覆盖的偏好设置
@@ -65,6 +70,8 @@ class PreferenceManager {
     }
     // 初始化存储管理器
     this.cache = new StorageManager({ prefix: namespace });
+    const cachedPreferences = this.loadCachedPreferences();
+    this.hadCachedPreferences = cachedPreferences !== null;
     // 合并初始偏好设置
     this.initialPreferences = merge({}, overrides, defaultPreferences);
 
@@ -72,7 +79,7 @@ class PreferenceManager {
     const mergedPreference = merge(
       {},
       // overrides,
-      this.loadCachedPreferences() || {},
+      cachedPreferences || {},
       this.initialPreferences,
     );
 
@@ -106,6 +113,7 @@ class PreferenceManager {
     [STORAGE_KEY, STORAGE_KEY_THEME, STORAGE_KEY_LOCALE].forEach((key) => {
       this.cache?.removeItem(key);
     });
+    this.hadCachedPreferences = false;
     this.updatePreferences(this.state);
   }
 
