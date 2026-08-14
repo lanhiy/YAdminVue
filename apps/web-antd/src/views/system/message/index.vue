@@ -5,6 +5,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page, VbenAvatar } from '@vben/common-ui';
+import { LogOut, X } from '@vben/icons';
 import { useUserStore } from '@vben/stores';
 
 import {
@@ -18,8 +19,6 @@ import {
   Tooltip,
 } from 'ant-design-vue';
 import dayjs from 'dayjs';
-
-import { LogOut, X } from '@vben/icons';
 
 import { useMessageStore } from '#/store';
 
@@ -63,7 +62,14 @@ const contacts = computed(() => {
         first.nickname.localeCompare(second.nickname)
       );
     })
-    .map((peer) => ({ peer, conversation: conversations.get(peer.id) }));
+    .map((peer) => {
+      const conversation = conversations.get(peer.id);
+      return {
+        conversation,
+        peer,
+        unreadLabel: formatUnread(conversation?.unread_count || 0),
+      };
+    });
 });
 
 function avatarOf(user?: MessageUser) {
@@ -79,6 +85,10 @@ function formatTime(value: string) {
   return time.isSame(dayjs(), 'day')
     ? time.format('HH:mm')
     : time.format('MM-DD HH:mm');
+}
+
+function formatUnread(count: number) {
+  return count > 99 ? '99+' : count;
 }
 
 function scrollToBottom() {
@@ -218,7 +228,7 @@ onMounted(async () => {
               class="presence-dot"
               :class="{ online: item.peer.online }"
               :title="item.peer.online ? '在线' : '离线'"
-            />
+            ></span>
             <span class="contact-main">
               <span class="contact-name">{{ item.peer.nickname }}</span>
               <span class="contact-preview">{{
@@ -232,12 +242,8 @@ onMounted(async () => {
               <span
                 v-if="item.conversation?.unread_count"
                 class="unread-badge"
-                >{{
-                  item.conversation.unread_count > 99
-                    ? '99+'
-                    : item.conversation.unread_count
-                }}</span
-              >
+                v-text="item.unreadLabel"
+              ></span>
             </span>
           </button>
           <Empty
@@ -298,7 +304,7 @@ onMounted(async () => {
                   <span
                     class="presence-dot"
                     :class="{ online: selectedPeer.online }"
-                  />
+                  ></span>
                   {{ selectedPeer.online ? '在线' : '离线' }} ·
                   {{ selectedPeer.username }}
                 </p>

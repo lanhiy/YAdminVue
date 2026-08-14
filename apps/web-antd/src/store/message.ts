@@ -16,8 +16,8 @@ import {
   createMessageWebSocketTicketApi,
   getMessageConversationsApi,
   getMessageHistoryApi,
-  getMessageUnreadApi,
   getMessageOnlineApi,
+  getMessageUnreadApi,
   getMessageUsersApi,
   kickMessageUserApi,
   markMessageConversationReadApi,
@@ -279,13 +279,13 @@ export const useMessageStore = defineStore('message', () => {
         );
         void synchronizeAfterConnect().catch(() => undefined);
       });
-      socket.onmessage = (event) => {
+      socket.addEventListener('message', (event) => {
         try {
           handleSocketEvent(JSON.parse(event.data) as MessageSocketEvent);
         } catch {
           // 忽略服务端之外的无效帧，保持连接可用。
         }
-      };
+      });
       socket.addEventListener('close', () => {
         connected.value = false;
         if (heartbeatTimer !== undefined) {
@@ -295,7 +295,7 @@ export const useMessageStore = defineStore('message', () => {
         socket = undefined;
         scheduleReconnect();
       });
-      socket.onerror = () => socket?.close();
+      socket.addEventListener('error', () => socket?.close());
     } catch {
       connected.value = false;
       scheduleReconnect();
@@ -316,14 +316,10 @@ export const useMessageStore = defineStore('message', () => {
     ) {
       users.value = usersResult.value;
     }
-    if (
-      onlineResult.status === 'fulfilled' &&
-      Array.isArray(onlineResult.value)
-    ) {
-      onlineUsers.value = onlineResult.value;
-    } else {
-      onlineUsers.value = users.value.filter((user) => user.online);
-    }
+    onlineUsers.value =
+      onlineResult.status === 'fulfilled' && Array.isArray(onlineResult.value)
+        ? onlineResult.value
+        : users.value.filter((user) => user.online);
     if (
       conversationsResult.status === 'fulfilled' &&
       Array.isArray(conversationsResult.value)
