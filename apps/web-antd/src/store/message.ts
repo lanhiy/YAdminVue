@@ -17,7 +17,9 @@ import {
   getMessageConversationsApi,
   getMessageHistoryApi,
   getMessageUnreadApi,
+  getMessageOnlineApi,
   getMessageUsersApi,
+  kickMessageUserApi,
   markMessageConversationReadApi,
 } from '#/api';
 
@@ -34,11 +36,15 @@ export const useMessageStore = defineStore('message', () => {
   const conversations = ref<MessageConversation[]>([]);
   const history = ref<DirectMessage[]>([]);
   const historyLoading = ref(false);
+  const kicked = ref(false);
+  const kickedReason = ref('');
+  const onlineUsers = ref<MessageUser[]>([]);
   const started = ref(false);
   const unreadCount = ref(0);
   const users = ref<MessageUser[]>([]);
 
   let heartbeatTimer: number | undefined;
+  let presenceTimer: number | undefined;
   let reconnectTimer: number | undefined;
   let socket: undefined | WebSocket;
   let reconnectAttempts = 0;
@@ -73,6 +79,10 @@ export const useMessageStore = defineStore('message', () => {
     if (reconnectTimer !== undefined) {
       window.clearTimeout(reconnectTimer);
       reconnectTimer = undefined;
+    }
+    if (presenceTimer !== undefined) {
+      window.clearInterval(presenceTimer);
+      presenceTimer = undefined;
     }
   }
 
@@ -152,6 +162,30 @@ export const useMessageStore = defineStore('message', () => {
     }
   }
 
+  function applyPresence(data: Record<string, any>) {
+    const adminId = Number(data.admin_id || 0);
+    if (adminId <= 0) return;
+    const online = Boolean(data.online);
+    users.value = users.value.map((user) =>
+      user.id === adminId ? { ...user, online } : user,
+    );
+    conversations.value = conversations.value.map((conversation) =>
+      conversation.peer.id === adminId
+        ? { ...conversation, peer: { ...conversation.peer, online } }
+        : conversation,
+    );
+    if (online) {
+      const user = users.value.find((item) => item.id === adminId);
+      if (user && !onlineUsers.value.some((item) => item.id === adminId)) {
+        onlineUsers.value = [...onlineUsers.value, { ...user, online: true }];
+      }
+    } else {
+      onlineUsers.value = onlineUsers.value.filter(
+        (user) => user.id !== adminId,
+      );
+    }
+  }
+
   function handleSocketEvent(event: MessageSocketEvent) {
     switch (event.type) {
       case 'connected': {
@@ -175,10 +209,39 @@ export const useMessageStore = defineStore('message', () => {
         applyReadReceipt(event.data || {});
         break;
       }
+      case 'presence.update': {
+        applyPresence(event.data || {});
+        break;
+      }
+      case 'session.kicked': {
+        kickedReason.value = String(
+          event.data?.message || '账号已被管理员踢下线',
+        );
+        kicked.value = true;
+        stop();
+        break;
+      }
       default: {
         break;
       }
     }
+  }
+
+  async function refreshPresence() {
+    const online = await getMessageOnlineApi();
+    const onlineIds = new Set(online.map((user) => user.id));
+    onlineUsers.value = online;
+    users.value = users.value.map((user) => ({
+      ...user,
+      online: onlineIds.has(user.id),
+    }));
+    conversations.value = conversations.value.map((conversation) => ({
+      ...conversation,
+      peer: {
+        ...conversation.peer,
+        online: onlineIds.has(conversation.peer.id),
+      },
+    }));
   }
 
   function scheduleReconnect() {
@@ -210,6 +273,10 @@ export const useMessageStore = defineStore('message', () => {
           () => sendSocketEvent('ping'),
           25_000,
         );
+        presenceTimer = window.setInterval(
+          () => void refreshPresence().catch(() => undefined),
+          30_000,
+        );
         void synchronizeAfterConnect().catch(() => undefined);
       });
       socket.onmessage = (event) => {
@@ -236,9 +303,10 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   async function refresh() {
-    const [usersResult, conversationsResult, unreadResult] =
+    const [usersResult, onlineResult, conversationsResult, unreadResult] =
       await Promise.allSettled([
         getMessageUsersApi(),
+        getMessageOnlineApi(),
         getMessageConversationsApi(),
         getMessageUnreadApi(),
       ]);
@@ -247,6 +315,14 @@ export const useMessageStore = defineStore('message', () => {
       Array.isArray(usersResult.value)
     ) {
       users.value = usersResult.value;
+    }
+    if (
+      onlineResult.status === 'fulfilled' &&
+      Array.isArray(onlineResult.value)
+    ) {
+      onlineUsers.value = onlineResult.value;
+    } else {
+      onlineUsers.value = users.value.filter((user) => user.online);
     }
     if (
       conversationsResult.status === 'fulfilled' &&
@@ -284,6 +360,25 @@ export const useMessageStore = defineStore('message', () => {
     socket?.close();
     socket = undefined;
     connected.value = false;
+  }
+
+  function $reset() {
+    stop();
+    activePeerId.value = null;
+    conversations.value = [];
+    history.value = [];
+    historyLoading.value = false;
+    kicked.value = false;
+    kickedReason.value = '';
+    onlineUsers.value = [];
+    unreadCount.value = 0;
+    users.value = [];
+    reconnectAttempts = 0;
+  }
+
+  async function kickUser(adminId: number) {
+    await kickMessageUserApi(adminId);
+    await refresh();
   }
 
   function clearSelection() {
@@ -338,12 +433,16 @@ export const useMessageStore = defineStore('message', () => {
   }
 
   return {
+    $reset,
     activePeerId,
     clearSelection,
     connected,
     conversations,
     history,
     historyLoading,
+    kicked,
+    kickedReason,
+    kickUser,
     markConversationRead,
     refresh,
     selectPeer,
@@ -351,6 +450,7 @@ export const useMessageStore = defineStore('message', () => {
     start,
     stop,
     unreadCount,
+    onlineUsers,
     users,
   };
 });

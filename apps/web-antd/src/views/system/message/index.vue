@@ -4,22 +4,22 @@ import type { MessageUser } from '#/api';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { Page } from '@vben/common-ui';
+import { Page, VbenAvatar } from '@vben/common-ui';
 import { useUserStore } from '@vben/stores';
 
 import {
-  Avatar,
   Button,
   Empty,
   Input,
   message,
+  Modal,
   Spin,
   Tag,
   Tooltip,
 } from 'ant-design-vue';
 import dayjs from 'dayjs';
 
-import { X } from '@vben/icons';
+import { LogOut, X } from '@vben/icons';
 
 import { useMessageStore } from '#/store';
 
@@ -29,11 +29,14 @@ const route = useRoute();
 const router = useRouter();
 const draft = ref('');
 const sending = ref(false);
+const activeList = ref<'contacts' | 'online'>('contacts');
 const messageListRef = ref<HTMLElement>();
 const selectedPeerId = computed(() => messageStore.activePeerId);
 const currentUserId = computed(() =>
   Number((userStore.userInfo as null | { user_id?: number })?.user_id || 0),
 );
+const canKick = computed(() => currentUserId.value === 1);
+const onlineUsers = computed(() => messageStore.onlineUsers ?? []);
 
 const selectedPeer = computed<MessageUser | undefined>(() => {
   const peerId = selectedPeerId.value;
@@ -64,7 +67,7 @@ const contacts = computed(() => {
 });
 
 function avatarOf(user?: MessageUser) {
-  return user?.avatar || undefined;
+  return user?.avatar || '';
 }
 
 function avatarText(user?: MessageUser) {
@@ -121,6 +124,26 @@ function closeConversation() {
   void router.replace({ path: route.path, query });
 }
 
+async function kickUser(user: MessageUser) {
+  try {
+    await messageStore.kickUser(user.id);
+    message.success(`${user.nickname} 已下线`);
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '踢下线失败');
+  }
+}
+
+function confirmKick(user: MessageUser) {
+  Modal.confirm({
+    cancelText: '取消',
+    content: '该账号的所有登录和消息连接都会立即失效。',
+    okButtonProps: { danger: true },
+    okText: '踢下线',
+    onOk: () => kickUser(user),
+    title: `确认踢出 ${user.nickname}？`,
+  });
+}
+
 watch(() => messageStore.history.length, scrollToBottom);
 
 async function selectRoutePeer(value: unknown) {
@@ -150,12 +173,34 @@ onMounted(async () => {
     <div class="message-workspace">
       <aside class="conversation-sidebar">
         <div class="sidebar-heading">
-          <span>联系人</span>
+          <span>{{ activeList === 'online' ? '在线人员' : '联系人' }}</span>
           <Tag :color="messageStore.connected ? 'success' : 'default'">
             {{ messageStore.connected ? '已连接' : '连接中' }}
           </Tag>
         </div>
-        <div class="contact-list">
+        <div class="sidebar-tabs" role="tablist">
+          <button
+            class="sidebar-tab"
+            :class="{ active: activeList === 'contacts' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeList === 'contacts'"
+            @click="activeList = 'contacts'"
+          >
+            联系人
+          </button>
+          <button
+            class="sidebar-tab"
+            :class="{ active: activeList === 'online' }"
+            type="button"
+            role="tab"
+            :aria-selected="activeList === 'online'"
+            @click="activeList = 'online'"
+          >
+            在线 {{ onlineUsers.length }}
+          </button>
+        </div>
+        <div v-if="activeList === 'contacts'" class="contact-list">
           <button
             v-for="item in contacts"
             :key="item.peer.id"
@@ -164,9 +209,16 @@ onMounted(async () => {
             type="button"
             @click="selectPeer(item.peer.id)"
           >
-            <Avatar :src="avatarOf(item.peer)" :size="40">{{
-              avatarText(item.peer)
-            }}</Avatar>
+            <VbenAvatar
+              :alt="avatarText(item.peer)"
+              :src="avatarOf(item.peer)"
+              class="size-10"
+            />
+            <span
+              class="presence-dot"
+              :class="{ online: item.peer.online }"
+              :title="item.peer.online ? '在线' : '离线'"
+            />
             <span class="contact-main">
               <span class="contact-name">{{ item.peer.nickname }}</span>
               <span class="contact-preview">{{
@@ -194,28 +246,72 @@ onMounted(async () => {
             :image="Empty.PRESENTED_IMAGE_SIMPLE"
           />
         </div>
+        <div v-else class="contact-list online-list">
+          <div
+            v-for="user in onlineUsers"
+            :key="user.id"
+            class="online-row"
+            :class="{ active: user.id === selectedPeerId }"
+            @click="selectPeer(user.id)"
+          >
+            <VbenAvatar
+              :alt="avatarText(user)"
+              :src="avatarOf(user)"
+              class="size-10"
+            />
+            <span class="contact-main">
+              <span class="contact-name">{{ user.nickname }}</span>
+              <span class="contact-preview">{{ user.username }} · 在线</span>
+            </span>
+            <Tooltip v-if="canKick" title="踢出下线">
+              <Button
+                danger
+                class="kick-button"
+                size="small"
+                aria-label="踢出下线"
+                @click.stop="confirmKick(user)"
+              >
+                <LogOut :size="16" />
+              </Button>
+            </Tooltip>
+          </div>
+          <Empty
+            v-if="onlineUsers.length === 0"
+            description="暂无在线人员"
+            :image="Empty.PRESENTED_IMAGE_SIMPLE"
+          />
+        </div>
       </aside>
 
       <section class="conversation-panel">
         <template v-if="selectedPeer">
           <header class="conversation-header">
             <div class="conversation-peer">
-              <Avatar :src="avatarOf(selectedPeer)" :size="36">{{
-                avatarText(selectedPeer)
-              }}</Avatar>
+              <VbenAvatar
+                :alt="avatarText(selectedPeer)"
+                :src="avatarOf(selectedPeer)"
+                class="size-9"
+              />
               <div>
                 <h2>{{ selectedPeer.nickname }}</h2>
-                <p>{{ selectedPeer.username }}</p>
+                <p>
+                  <span
+                    class="presence-dot"
+                    :class="{ online: selectedPeer.online }"
+                  />
+                  {{ selectedPeer.online ? '在线' : '离线' }} ·
+                  {{ selectedPeer.username }}
+                </p>
               </div>
             </div>
             <Tooltip title="关闭会话">
               <Button
                 aria-label="关闭会话"
                 class="close-conversation"
-                type="text"
                 @click="closeConversation"
               >
                 <X :size="18" />
+                <span>关闭</span>
               </Button>
             </Tooltip>
           </header>
@@ -227,9 +323,11 @@ onMounted(async () => {
                 class="message-row"
                 :class="{ mine: item.sender_id === currentUserId }"
               >
-                <Avatar :src="avatarOf(item.sender)" :size="32">{{
-                  avatarText(item.sender)
-                }}</Avatar>
+                <VbenAvatar
+                  :alt="avatarText(item.sender)"
+                  :src="avatarOf(item.sender)"
+                  class="size-8"
+                />
                 <div class="message-body">
                   <div class="message-content">{{ item.content }}</div>
                   <div class="message-state">
@@ -299,6 +397,7 @@ onMounted(async () => {
 }
 
 .sidebar-heading,
+.sidebar-tabs,
 .conversation-header,
 .composer-actions {
   display: flex;
@@ -313,9 +412,72 @@ onMounted(async () => {
   border-bottom: 1px solid hsl(var(--border));
 }
 
+.sidebar-tabs {
+  gap: 4px;
+  height: 44px;
+  padding: 6px 8px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.sidebar-tab {
+  flex: 1;
+  border: 0;
+  border-radius: 4px;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.sidebar-tab.active {
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+}
+
 .contact-list {
-  height: calc(100% - 60px);
+  box-sizing: border-box;
+  height: calc(100% - 104px);
+  padding: 8px;
   overflow-y: auto;
+}
+
+.online-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 68px;
+  margin-bottom: 8px;
+  padding: 10px 8px 10px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  cursor: pointer;
+  background: hsl(var(--card));
+}
+
+.online-row:hover,
+.online-row.active {
+  border-color: hsl(var(--primary) / 55%);
+  background: hsl(var(--primary) / 10%);
+}
+
+.kick-button {
+  flex: 0 0 auto;
+  color: hsl(var(--destructive));
+}
+
+.presence-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border: 1px solid hsl(var(--card));
+  border-radius: 50%;
+  background: hsl(var(--muted-foreground) / 50%);
+}
+
+.presence-dot.online {
+  background: #22c55e;
 }
 
 .contact-row {
@@ -323,18 +485,24 @@ onMounted(async () => {
   gap: 10px;
   width: 100%;
   min-height: 68px;
-  padding: 12px 14px;
+  margin-bottom: 8px;
+  padding: 12px;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
 }
 
-.contact-row:hover,
-.contact-row.active {
+.contact-row:hover {
   background: hsl(var(--accent));
+  border-color: hsl(var(--primary) / 35%);
+}
+
+.contact-row.active {
+  background: hsl(var(--primary) / 12%);
+  border-color: hsl(var(--primary) / 60%);
 }
 
 .contact-main,
@@ -409,17 +577,22 @@ onMounted(async () => {
 
 .close-conversation {
   display: inline-flex;
-  flex: 0 0 32px;
+  flex: 0 0 auto;
+  gap: 6px;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  min-width: 72px;
   height: 32px;
-  color: hsl(var(--muted-foreground));
+  padding: 0 10px;
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
 }
 
 .close-conversation:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--accent));
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 8%);
+  border-color: hsl(var(--destructive) / 45%);
 }
 
 .conversation-header h2 {
@@ -534,6 +707,10 @@ onMounted(async () => {
     font-size: 12px;
   }
 
+  .sidebar-tabs {
+    padding: 6px 4px;
+  }
+
   .sidebar-heading :deep(.ant-tag) {
     display: none;
   }
@@ -541,6 +718,7 @@ onMounted(async () => {
   .contact-row {
     justify-content: center;
     min-height: 62px;
+    margin-bottom: 6px;
     padding: 10px;
   }
 

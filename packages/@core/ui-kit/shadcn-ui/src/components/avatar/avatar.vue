@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
   dot: false,
   dotClass: 'bg-green-500',
   fit: 'cover',
+  referrerPolicy: 'no-referrer',
 });
 
 const imageStyle = computed<CSSProperties>(() => {
@@ -65,7 +66,7 @@ const rootStyle = computed(() => {
     <Avatar :class="props.class" class="size-full">
       <AvatarImage
         :alt="alt"
-        :referrerpolicy="referrerPolicy"
+        :referrerpolicy="props.referrerPolicy"
         :src="src"
         :style="imageStyle"
       />

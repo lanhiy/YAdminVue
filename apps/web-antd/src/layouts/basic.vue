@@ -15,6 +15,7 @@ import {
 } from '@vben/layouts';
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
+import { notification } from 'ant-design-vue';
 
 import { useAuthStore, useMessageStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
@@ -133,6 +134,20 @@ watch(
   },
   {
     immediate: true,
+  },
+);
+
+watch(
+  () => messageStore.kicked,
+  (value) => {
+    if (value) {
+      notification.warning({
+        description: messageStore.kickedReason,
+        message: '账号已退出',
+      });
+      messageStore.stop();
+      void authStore.logout({ notifyServer: false, redirect: false });
+    }
   },
 );
 

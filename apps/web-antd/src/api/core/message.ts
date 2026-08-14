@@ -4,6 +4,7 @@ export interface MessageUser {
   avatar: string;
   id: number;
   nickname: string;
+  online?: boolean;
   username: string;
 }
 
@@ -45,6 +46,17 @@ export async function getMessageUsersApi() {
     '/system/message/users',
   );
   return data ?? [];
+}
+
+export async function getMessageOnlineApi() {
+  const data = await requestClient.get<MessageUser[] | null>(
+    '/system/message/online',
+  );
+  return data ?? [];
+}
+
+export function kickMessageUserApi(adminId: number) {
+  return requestClient.post<null>(`/system/message/kick/${adminId}`);
 }
 
 export async function getMessageConversationsApi() {

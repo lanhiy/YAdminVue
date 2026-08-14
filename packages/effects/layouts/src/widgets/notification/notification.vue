@@ -107,6 +107,7 @@ function handleClick(item: NotificationItem) {
                 <img
                   :src="item.avatar"
                   class="aspect-square h-full w-full object-cover"
+                  referrerpolicy="no-referrer"
                   role="img"
                 />
               </span>
