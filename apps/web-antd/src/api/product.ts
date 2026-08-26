@@ -13,8 +13,6 @@ export interface ProductInfo {
   model?: string;
   /** 制造厂商 */
   manufacturer?: string;
-  /** 单位名称 */
-  unit_name?: string;
   remark?: string;
   sort?: number;
   created_by?: number;
@@ -52,7 +50,6 @@ export interface ProductListParams {
   instrument_no?: string;
   model?: string;
   manufacturer?: string;
-  unit_name?: string;
 }
 
 /**

@@ -39,7 +39,6 @@ const createDefaultForm = (): ProductInfo => ({
   instrument_no: '',
   model: '',
   manufacturer: '',
-  unit_name: '',
   remark: '',
   sort: 0,
 });
@@ -155,16 +154,6 @@ const handleClose = () => {
               v-model:value="formData.manufacturer"
               allow-clear
               placeholder="请输入制造厂商"
-            />
-          </FormItem>
-        </Col>
-
-        <Col :span="12">
-          <FormItem label="单位名称" name="unit_name">
-            <Input
-              v-model:value="formData.unit_name"
-              allow-clear
-              placeholder="请输入单位名称"
             />
           </FormItem>
         </Col>

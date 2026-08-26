@@ -7,8 +7,8 @@ export interface SignatureInfo {
   id?: number;
   /** 签名人姓名 */
   name: string;
-  /** 签名图片地址 */
-  image_url: string;
+  /** 签名图片 Base64 Data URL */
+  image_base64: string;
   remark?: string;
   sort?: number;
   created_by?: number;
@@ -25,7 +25,7 @@ export interface SignatureInfo {
 export interface SignatureOption {
   id: number;
   name: string;
-  image_url: string;
+  image_base64: string;
 }
 
 /**
@@ -91,7 +91,7 @@ export async function updateSignatureApi(id: number, data: SignatureInfo) {
 /**
  * 删除签名
  *
- * 单据里存的是图片URL副本，删除签名不影响已签发的报告和证书。
+ * 单据里存的是图片 Base64 副本，删除签名不影响已签发的报告和证书。
  */
 export async function deleteSignatureApi(id: number) {
   return requestClient.delete(`/system/business/signature/${id}`);

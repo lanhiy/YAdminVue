@@ -9,7 +9,6 @@ export interface DocProductBrief {
   instrument_no: string;
   model: string;
   manufacturer: string;
-  unit_name: string;
 }
 
 /**
@@ -18,8 +17,6 @@ export interface DocProductBrief {
 interface DocBase {
   id?: number;
   product_id: number;
-  /** 单位名称 */
-  unit_name?: string;
   total_pages?: number;
   remark?: string;
   created_by?: number;

@@ -6,10 +6,9 @@ import { computed, ref } from 'vue';
 import { Button, Empty, message, Modal, Spin } from 'ant-design-vue';
 
 import { getEnabledSignaturesApi } from '#/api';
-import { resolveAssetUrl } from '#/utils/asset';
 
 interface Props {
-  /** 当前选中的签名图片地址 */
+  /** 当前选中的签名图片 Base64 Data URL */
   value?: string;
   /** 占位提示 */
   placeholder?: string;
@@ -28,7 +27,7 @@ const pickerVisible = ref(false);
 const loading = ref(false);
 const signatures = ref<SignatureOption[]>([]);
 
-const previewUrl = computed(() => resolveAssetUrl(props.value));
+const previewUrl = computed(() => props.value);
 
 /** 打开选择器并拉取签名库 */
 const handleOpen = async () => {
@@ -48,9 +47,9 @@ const handleOpen = async () => {
   }
 };
 
-/** 选中一条签名，只取图片地址 */
+/** 选中一条签名，只取图片 Base64 */
 const handlePick = (item: SignatureOption) => {
-  emit('update:value', item.image_url);
+  emit('update:value', item.image_base64);
   pickerVisible.value = false;
 };
 
@@ -64,7 +63,7 @@ const handleClear = () => {
   <div class="flex items-center gap-3">
     <!-- 当前签名预览 -->
     <div
-      class="flex h-16 w-32 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300 bg-gray-50"
+      class="signature-preview-surface flex h-16 w-32 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300"
     >
       <img
         v-if="previewUrl"
@@ -103,15 +102,15 @@ const handleClear = () => {
             :key="item.id"
             class="cursor-pointer rounded border p-2 transition-colors hover:border-blue-500"
             :class="
-              item.image_url === value ? 'border-blue-500' : 'border-gray-200'
+              item.image_base64 === value ? 'border-blue-500' : 'border-gray-200'
             "
             @click="handlePick(item)"
           >
             <div
-              class="flex h-20 items-center justify-center overflow-hidden bg-gray-50"
+              class="signature-preview-surface flex h-20 items-center justify-center overflow-hidden"
             >
               <img
-                :src="resolveAssetUrl(item.image_url)"
+                :src="item.image_base64"
                 :alt="item.name"
                 class="h-full w-full object-contain"
               />
@@ -123,3 +122,16 @@ const handleClear = () => {
     </Modal>
   </div>
 </template>
+
+<style scoped>
+.signature-preview-surface {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #eef0f2 25%, transparent 25%),
+    linear-gradient(-45deg, #eef0f2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef0f2 75%),
+    linear-gradient(-45deg, transparent 75%, #eef0f2 75%);
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-size: 12px 12px;
+}
+</style>

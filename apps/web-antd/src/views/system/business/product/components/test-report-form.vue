@@ -40,7 +40,6 @@ const createDefault = (productId: number): TestReportInfo => ({
   product_id: productId,
   report_no: '',
   client_name: '',
-  unit_name: '',
   approver_sign_img: '',
   reviewer_sign_img: '',
   tester_sign_img: '',
@@ -141,14 +140,6 @@ const handleClose = () => {
             v-model:value="formData.client_name"
             allow-clear
             placeholder="请输入委托方"
-          />
-        </FormItem>
-
-        <FormItem label="单位名称" name="unit_name">
-          <Input
-            v-model:value="formData.unit_name"
-            allow-clear
-            placeholder="请输入单位名称"
           />
         </FormItem>
 

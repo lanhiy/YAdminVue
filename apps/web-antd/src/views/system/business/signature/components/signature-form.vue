@@ -17,12 +17,7 @@ import {
   Upload,
 } from 'ant-design-vue';
 
-import {
-  createSignatureApi,
-  updateSignatureApi,
-  uploadImageApi,
-} from '#/api';
-import { resolveAssetUrl } from '#/utils/asset';
+import { createSignatureApi, updateSignatureApi } from '#/api';
 
 interface Props {
   visible: boolean;
@@ -42,7 +37,7 @@ const uploading = ref(false);
 
 const createDefaultForm = (): SignatureInfo => ({
   name: '',
-  image_url: '',
+  image_base64: '',
   remark: '',
   sort: 0,
 });
@@ -53,11 +48,11 @@ const modalTitle = computed(() =>
   props.mode === 'create' ? '新增签名' : '编辑签名',
 );
 
-const previewUrl = computed(() => resolveAssetUrl(formData.value.image_url));
+const previewUrl = computed(() => formData.value.image_base64);
 
 const rules: FormProps['rules'] = {
   name: [{ required: true, message: '请输入签名人姓名', trigger: 'blur' }],
-  image_url: [{ required: true, message: '请上传签名图片', trigger: 'change' }],
+  image_base64: [{ required: true, message: '请上传签名图片', trigger: 'change' }],
 };
 
 watch(
@@ -71,16 +66,29 @@ watch(
   },
 );
 
-/** 交给自定义上传，绕开 Upload 组件默认的 action 行为 */
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('无法读取图片'));
+      }
+    };
+    reader.onerror = () => reject(new Error('无法读取图片'));
+    reader.readAsDataURL(file);
+  });
+
+/** 仅在浏览器本地读取 Base64，不再保存原图文件 */
 const handleUpload = async (options: any) => {
   const { file, onError, onSuccess } = options;
 
   try {
     uploading.value = true;
-    const result = await uploadImageApi(file as File, 'signature');
-    formData.value.image_url = result.url;
-    message.success('图片上传成功');
-    onSuccess?.(result);
+    formData.value.image_base64 = await readAsDataUrl(file as File);
+    message.success('图片读取成功');
+    onSuccess?.(formData.value.image_base64);
   } catch (error: any) {
     message.error(error.message || '图片上传失败');
     onError?.(error);
@@ -168,10 +176,10 @@ const handleClose = () => {
         />
       </FormItem>
 
-      <FormItem label="签名图片" name="image_url">
+      <FormItem label="签名图片" name="image_base64">
         <div class="flex items-center gap-3">
           <div
-            class="flex h-20 w-40 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300 bg-gray-50"
+            class="signature-preview-surface flex h-20 w-40 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed border-gray-300"
           >
             <img
               v-if="previewUrl"
@@ -187,12 +195,12 @@ const handleClose = () => {
             :show-upload-list="false"
           >
             <Button :loading="uploading">
-              {{ formData.image_url ? '重新上传' : '上传图片' }}
+              {{ formData.image_base64 ? '重新上传' : '上传图片' }}
             </Button>
           </Upload>
         </div>
         <div class="mt-1 text-xs text-gray-400">
-          支持 jpg/png/gif/webp/bmp，5MB 以内。建议使用透明背景 PNG。
+          支持 jpg/png/gif/webp/bmp，5MB 以内。透明背景签名会显示在浅色背景上。
         </div>
       </FormItem>
 
@@ -217,3 +225,16 @@ const handleClose = () => {
     </Form>
   </Modal>
 </template>
+
+<style scoped>
+.signature-preview-surface {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #eef0f2 25%, transparent 25%),
+    linear-gradient(-45deg, #eef0f2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef0f2 75%),
+    linear-gradient(-45deg, transparent 75%, #eef0f2 75%);
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-size: 12px 12px;
+}
+</style>

@@ -54,7 +54,6 @@ const searchForm = ref({
   instrument_no: '',
   model: '',
   manufacturer: '',
-  unit_name: '',
 });
 
 /** 打开某张子表的弹窗 */
@@ -177,14 +176,6 @@ const columns: TableColumnsType = [
     ellipsis: true,
     customRender: ({ record }: { record: ProductInfo }) =>
       record.manufacturer || '-',
-  },
-  {
-    title: '单位名称',
-    dataIndex: 'unit_name',
-    width: 160,
-    ellipsis: true,
-    customRender: ({ record }: { record: ProductInfo }) =>
-      record.unit_name || '-',
   },
   {
     title: '报告/证书',
@@ -351,7 +342,6 @@ const handleReset = () => {
     instrument_no: '',
     model: '',
     manufacturer: '',
-    unit_name: '',
   };
   page.value = 1;
   loadProductList();
@@ -457,13 +447,6 @@ onMounted(() => {
           allow-clear
           placeholder="制造厂商"
           style="width: 160px"
-          @press-enter="handleSearch"
-        />
-        <Input
-          v-model:value="searchForm.unit_name"
-          allow-clear
-          placeholder="单位名称"
-          style="width: 180px"
           @press-enter="handleSearch"
         />
         <Button type="primary" @click="handleSearch">

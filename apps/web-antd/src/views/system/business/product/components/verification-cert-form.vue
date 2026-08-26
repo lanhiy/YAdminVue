@@ -40,7 +40,6 @@ const createDefault = (productId: number): VerificationCertInfo => ({
   product_id: productId,
   cert_no: '',
   submit_unit: '',
-  unit_name: '',
   basis: '',
   conclusion: '',
   approver_sign_img: '',
@@ -150,14 +149,6 @@ const handleClose = () => {
             v-model:value="formData.submit_unit"
             allow-clear
             placeholder="请输入送检单位"
-          />
-        </FormItem>
-
-        <FormItem label="单位名称" name="unit_name">
-          <Input
-            v-model:value="formData.unit_name"
-            allow-clear
-            placeholder="请输入单位名称"
           />
         </FormItem>
 

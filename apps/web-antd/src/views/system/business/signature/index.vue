@@ -22,7 +22,6 @@ import {
   deleteSignatureApi,
   getSignatureListApi,
 } from '#/api';
-import { resolveAssetUrl } from '#/utils/asset';
 
 import SignatureForm from './components/signature-form.vue';
 
@@ -49,20 +48,35 @@ const columns: TableColumnsType = [
   },
   {
     title: '签名图片',
-    dataIndex: 'image_url',
+    dataIndex: 'image_base64',
     width: 200,
     customRender: ({ record }: { record: SignatureInfo }) => {
-      const url = resolveAssetUrl(record.image_url);
+      const url = record.image_base64;
 
       if (!url) {
         return '-';
       }
 
-      return h('img', {
-        src: url,
-        alt: record.name,
-        class: 'h-12 max-w-full object-contain',
-      });
+      return h(
+        'div',
+        {
+          class: 'flex h-16 w-40 items-center justify-center overflow-hidden rounded border border-gray-200',
+          style: {
+            backgroundColor: '#fff',
+            backgroundImage:
+              'linear-gradient(45deg, #eef0f2 25%, transparent 25%), linear-gradient(-45deg, #eef0f2 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eef0f2 75%), linear-gradient(-45deg, transparent 75%, #eef0f2 75%)',
+            backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0',
+            backgroundSize: '16px 16px',
+          },
+        },
+        [
+          h('img', {
+            src: url,
+            alt: record.name,
+            class: 'h-full w-full object-contain',
+          }),
+        ],
+      );
     },
   },
   {
