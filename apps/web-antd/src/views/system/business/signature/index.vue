@@ -194,11 +194,16 @@ const handleEdit = (record: SignatureInfo) => {
 
 const handleDelete = (record: SignatureInfo) => {
   Modal.confirm({
+    class: 'business-confirm-modal',
     title: '确认删除',
     content: `确定要删除「${record.name}」的签名吗？已签发的报告和证书不受影响。`,
+    centered: true,
+    icon: () => h(Icon, { icon: 'mdi:alert-circle-outline', width: 24 }),
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
+    type: 'warning',
+    width: 520,
     async onOk() {
       try {
         await deleteSignatureApi(record.id!);

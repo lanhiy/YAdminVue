@@ -93,6 +93,13 @@ export async function createProductApi(data: ProductInfo) {
 }
 
 /**
+ * 复制产品及其已有报告/证书
+ */
+export async function copyProductApi(id: number) {
+  return requestClient.post<ProductInfo>(`/system/business/product/copy/${id}`);
+}
+
+/**
  * 更新产品
  */
 export async function updateProductApi(id: number, data: ProductInfo) {

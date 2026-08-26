@@ -1,0 +1,61 @@
+/* 业务操作确认框需要清晰区分于普通提示。 */
+.business-confirm-modal .ant-modal-content {
+  border: 1px solid #d6e4ff;
+  border-top: 4px solid #1677ff;
+  border-radius: 8px;
+}
+
+.business-confirm-modal .ant-modal-confirm-body-wrapper {
+  padding: 26px 30px 0;
+}
+
+.business-confirm-modal .ant-modal-confirm-body {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 14px;
+  align-items: start;
+}
+
+.business-confirm-modal .ant-modal-confirm-title {
+  grid-column: 2;
+  color: #1f1f1f;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.business-confirm-modal .ant-modal-confirm-content {
+  grid-column: 2;
+  margin-top: 10px;
+  color: #595959;
+  font-size: 15px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.business-confirm-modal .ant-modal-confirm-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 22px 30px 26px;
+  padding-top: 18px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.business-confirm-modal .ant-modal-confirm-btns .ant-btn {
+  min-height: 38px;
+  padding-inline: 18px;
+  font-size: 15px;
+}
+
+.business-confirm-modal .ant-modal-confirm-body > .anticon {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin-top: 1px;
+  font-size: 24px;
+}
+
+.business-confirm-modal.ant-modal-confirm-error .ant-modal-content,
+.business-confirm-modal.ant-modal-confirm-warning .ant-modal-content {
+  border-color: #ffccc7;
+  border-top-color: #ff4d4f;
+}

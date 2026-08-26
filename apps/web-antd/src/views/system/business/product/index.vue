@@ -23,7 +23,11 @@ import {
   Tooltip,
 } from 'ant-design-vue';
 
-import { deleteProductApi, getProductListApi } from '#/api';
+import {
+  copyProductApi,
+  deleteProductApi,
+  getProductListApi,
+} from '#/api';
 
 import CalibrationCertForm from './components/calibration-cert-form.vue';
 import ProductForm from './components/product-form.vue';
@@ -241,7 +245,7 @@ const columns: TableColumnsType = [
   {
     title: '操作',
     key: 'action',
-    width: 230,
+    width: 280,
     fixed: 'right',
     customRender: ({ record }: { record: ProductInfo }) => {
       const actions = [];
@@ -291,6 +295,23 @@ const columns: TableColumnsType = [
         );
       }
 
+      if (hasAccessByCodes(['system:product:copy'])) {
+        actions.push(
+          h(
+            Button,
+            {
+              type: 'link',
+              size: 'small',
+              onClick: () => handleCopy(record),
+            },
+            {
+              default: () => '复制',
+              icon: () => h(Icon, { icon: 'mdi:content-copy', width: 16 }),
+            },
+          ),
+        );
+      }
+
       if (hasAccessByCodes(['system:product:delete'])) {
         actions.push(
           h(
@@ -309,7 +330,11 @@ const columns: TableColumnsType = [
         );
       }
 
-      return h('div', { class: 'flex items-center gap-1' }, actions);
+      return h(
+        'div',
+        { class: 'flex items-center gap-1 whitespace-nowrap' },
+        actions,
+      );
     },
   },
 ];
@@ -359,13 +384,51 @@ const handleEdit = (record: ProductInfo) => {
   formModalVisible.value = true;
 };
 
+const getCopyTimestamp = () => {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${String(now.getMilliseconds()).padStart(3, '0')}`;
+};
+
+const handleCopy = (record: ProductInfo) => {
+  const suffix = `副本${getCopyTimestamp()}`;
+  const instrumentName = `${record.instrument_name}${suffix}`.slice(0, 100);
+
+  Modal.confirm({
+    title: '确认复制',
+    class: 'business-confirm-modal',
+    content: `将复制器具「${record.instrument_name}」及其已有报告和证书，名称将生成「${instrumentName}」，器具编号保持不变。`,
+    centered: true,
+    icon: () => h(Icon, { icon: 'mdi:content-copy', width: 24 }),
+    okText: '复制',
+    type: 'warning',
+    width: 520,
+    cancelText: '取消',
+    async onOk() {
+      try {
+        await copyProductApi(record.id!);
+        message.success('复制成功');
+        await loadProductList();
+      } catch (error: any) {
+        message.error(error.message || '复制失败');
+      }
+    },
+  });
+};
+
 const handleDelete = (record: ProductInfo) => {
   Modal.confirm({
+    class: 'business-confirm-modal',
     title: '确认删除',
     content: `确定要删除产品「${record.instrument_name}」吗？该产品下的测试报告、检定证书、校准证书会一并删除。`,
+    centered: true,
+    icon: () => h(Icon, { icon: 'mdi:alert-circle-outline', width: 24 }),
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
+    type: 'warning',
+    width: 520,
     async onOk() {
       try {
         await deleteProductApi(record.id!);
