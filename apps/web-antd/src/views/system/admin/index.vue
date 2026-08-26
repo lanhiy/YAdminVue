@@ -2,6 +2,7 @@
 import { ref, onMounted, h } from 'vue';
 import { Icon } from '@iconify/vue';
 import { Modal, Tag } from 'ant-design-vue';
+import { useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 import { Button, Table, Switch, Input, Select, Space, message } from 'ant-design-vue';
 import {
@@ -13,6 +14,8 @@ import {
   AdminGender,
 } from '#/api';
 import AdminForm from './components/admin-form.vue';
+
+const { hasAccessByCodes } = useAccess();
 
 // 数据
 const loading = ref(false);
@@ -112,6 +115,7 @@ const columns = [
         checked: record.status === AdminStatus.ENABLED,
         checkedChildren: '启用',
         unCheckedChildren: '禁用',
+        disabled: !hasAccessByCodes(['system:admin:status']),
         onChange: (checked: boolean) => handleStatusChange(record, checked),
       });
     },
@@ -132,33 +136,46 @@ const columns = [
     width: 150,
     fixed: 'right',
     customRender: ({ record }: { record: AdminInfo }) => {
-      return h('div', { class: 'flex items-center gap-2' }, [
-        h(
-          Button,
-          {
-            type: 'link',
-            size: 'small',
-            onClick: () => handleEdit(record),
-          },
-          {
-            default: () => '编辑',
-            icon: () => h(Icon, { icon: 'mdi:pencil', width: 16 }),
-          },
-        ),
-        h(
-          Button,
-          {
-            type: 'link',
-            size: 'small',
-            danger: true,
-            onClick: () => handleDelete(record),
-          },
-          {
-            default: () => '删除',
-            icon: () => h(Icon, { icon: 'mdi:delete', width: 16 }),
-          },
-        ),
-      ]);
+      const actions = [];
+
+      if (hasAccessByCodes(['system:admin:edit'])) {
+        actions.push(
+          h(
+            Button,
+            {
+              type: 'link',
+              size: 'small',
+              onClick: () => handleEdit(record),
+            },
+            {
+              default: () => '编辑',
+              icon: () => h(Icon, { icon: 'mdi:pencil', width: 16 }),
+            },
+          ),
+        );
+      }
+
+      if (hasAccessByCodes(['system:admin:delete'])) {
+        actions.push(
+          h(
+            Button,
+            {
+              type: 'link',
+              size: 'small',
+              danger: true,
+              onClick: () => handleDelete(record),
+            },
+            {
+              default: () => '删除',
+              icon: () => h(Icon, { icon: 'mdi:delete', width: 16 }),
+            },
+          ),
+        );
+      }
+
+      return actions.length > 0
+        ? h('div', { class: 'flex items-center gap-2' }, actions)
+        : h('span', { class: 'text-gray-400' }, '-');
     },
   },
 ];
@@ -272,7 +289,7 @@ onMounted(() => {
     title="用户管理"
   >
     <template #extra>
-      <Button type="primary" @click="handleAdd">
+      <Button v-access:code="['system:admin:add']" type="primary" @click="handleAdd">
         <template #icon>
           <i class="i-ant-design:plus-outlined" />
         </template>

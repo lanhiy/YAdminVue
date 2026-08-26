@@ -5,6 +5,7 @@ import type { MenuInfo } from '#/api';
 import { h, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
 import { Icon } from '@iconify/vue';
@@ -20,6 +21,8 @@ import {
 import { refreshAccess } from '#/utils/refresh-access';
 
 import MenuForm from './components/menu-form.vue';
+
+const { hasAccessByCodes } = useAccess();
 
 // 数据
 const router = useRouter();
@@ -96,6 +99,7 @@ const columns = [
         checked: record.status === MenuStatus.ENABLED,
         checkedChildren: '启用',
         unCheckedChildren: '禁用',
+        disabled: !hasAccessByCodes(['system:menu:status']),
         onChange: (checked: boolean) => handleStatusChange(record, checked),
       });
     },
@@ -106,46 +110,64 @@ const columns = [
     width: 200,
     fixed: 'right',
     customRender: ({ record }: { record: MenuInfo }) => {
-      return h('div', { class: 'flex items-center gap-3' }, [
-        h(
-          Button,
-          {
-            type: 'link',
-            size: 'small',
-            onClick: () => handleEdit(record),
-          },
-          {
-            default: () => '编辑',
-            icon: () => h(Icon, { icon: 'mdi:pencil', width: 16 }),
-          },
-        ),
-        h(
-          Button,
-          {
-            type: 'link',
-            size: 'small',
-            style: { color: '#52c41a' },
-            onClick: () => handleAdd(record.id!),
-          },
-          {
-            default: () => '添加',
-            icon: () => h(Icon, { icon: 'mdi:plus', width: 16 }),
-          },
-        ),
-        h(
-          Button,
-          {
-            type: 'link',
-            size: 'small',
-            danger: true,
-            onClick: () => handleDelete(record),
-          },
-          {
-            default: () => '删除',
-            icon: () => h(Icon, { icon: 'mdi:delete', width: 16 }),
-          },
-        ),
-      ]);
+      const actions = [];
+
+      if (hasAccessByCodes(['system:menu:edit'])) {
+        actions.push(
+          h(
+            Button,
+            {
+              type: 'link',
+              size: 'small',
+              onClick: () => handleEdit(record),
+            },
+            {
+              default: () => '编辑',
+              icon: () => h(Icon, { icon: 'mdi:pencil', width: 16 }),
+            },
+          ),
+        );
+      }
+
+      if (hasAccessByCodes(['system:menu:add'])) {
+        actions.push(
+          h(
+            Button,
+            {
+              type: 'link',
+              size: 'small',
+              style: { color: '#52c41a' },
+              onClick: () => handleAdd(record.id!),
+            },
+            {
+              default: () => '添加',
+              icon: () => h(Icon, { icon: 'mdi:plus', width: 16 }),
+            },
+          ),
+        );
+      }
+
+      if (hasAccessByCodes(['system:menu:delete'])) {
+        actions.push(
+          h(
+            Button,
+            {
+              type: 'link',
+              size: 'small',
+              danger: true,
+              onClick: () => handleDelete(record),
+            },
+            {
+              default: () => '删除',
+              icon: () => h(Icon, { icon: 'mdi:delete', width: 16 }),
+            },
+          ),
+        );
+      }
+
+      return actions.length > 0
+        ? h('div', { class: 'flex items-center gap-3' }, actions)
+        : h('span', { class: 'text-gray-400' }, '-');
     },
   },
 ];
@@ -237,7 +259,7 @@ onMounted(() => {
     title="菜单管理"
   >
     <template #extra>
-      <Button type="primary" @click="handleAdd()">
+      <Button v-access:code="['system:menu:add']" type="primary" @click="handleAdd()">
         <template #icon>
           <i class="i-ant-design:plus-outlined"></i>
         </template>

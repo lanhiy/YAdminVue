@@ -1,61 +1,79 @@
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue';
-import { Icon } from '@iconify/vue';
-import { Modal } from 'ant-design-vue';
+import type { TableColumnsType } from 'ant-design-vue';
+
+import type { SignatureInfo } from '#/api';
+
+import { h, onMounted, ref } from 'vue';
+
 import { useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
-import { Button, Table, Switch, Input, Select, Space, message } from 'ant-design-vue';
+
+import { Icon } from '@iconify/vue';
 import {
-  getRoleListApi,
-  deleteRoleApi,
-  changeRoleStatusApi,
-  type RoleInfo,
-  RoleStatus,
+  Button,
+  Input,
+  message,
+  Modal,
+  Select,
+  Space,
+  Switch,
+  Table,
+} from 'ant-design-vue';
+
+import {
+  changeSignatureStatusApi,
+  deleteSignatureApi,
+  getSignatureListApi,
+  SignatureStatus,
 } from '#/api';
-import RoleForm from './components/role-form.vue';
+import { resolveAssetUrl } from '#/utils/asset';
+
+import SignatureForm from './components/signature-form.vue';
 
 const { hasAccessByCodes } = useAccess();
 
-// 数据
 const loading = ref(false);
-const roleList = ref<RoleInfo[]>([]);
+const signatureList = ref<SignatureInfo[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(20);
 const formModalVisible = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
-const currentRole = ref<RoleInfo | null>(null);
+const currentSignature = ref<null | SignatureInfo>(null);
 
-// 搜索条件
 const searchForm = ref({
   name: '',
-  code: '',
   status: undefined as number | undefined,
 });
 
-// 状态选项 - 修复:移除"全部"选项,使用 allowClear 代替
 const statusOptions = [
-  { label: '启用', value: RoleStatus.ENABLED },
-  { label: '禁用', value: RoleStatus.DISABLED },
+  { label: '启用', value: SignatureStatus.ENABLED },
+  { label: '禁用', value: SignatureStatus.DISABLED },
 ];
 
-// 表格列配置
-const columns = [
+const columns: TableColumnsType = [
   {
-    title: '角色名称',
+    title: '签名人姓名',
     dataIndex: 'name',
-    width: 150,
+    width: 160,
   },
   {
-    title: '角色编码',
-    dataIndex: 'code',
-    width: 150,
-  },
-  {
-    title: '角色描述',
-    dataIndex: 'description',
-    width: 250,
-    ellipsis: true,
+    title: '签名图片',
+    dataIndex: 'image_url',
+    width: 200,
+    customRender: ({ record }: { record: SignatureInfo }) => {
+      const url = resolveAssetUrl(record.image_url);
+
+      if (!url) {
+        return '-';
+      }
+
+      return h('img', {
+        src: url,
+        alt: record.name,
+        class: 'h-12 max-w-full object-contain',
+      });
+    },
   },
   {
     title: '排序',
@@ -66,15 +84,31 @@ const columns = [
     title: '状态',
     dataIndex: 'status',
     width: 100,
-    customRender: ({ record }: { record: RoleInfo }) => {
+    customRender: ({ record }: { record: SignatureInfo }) => {
       return h(Switch, {
-        checked: record.status === RoleStatus.ENABLED,
+        checked: record.status === SignatureStatus.ENABLED,
         checkedChildren: '启用',
+        disabled: !hasAccessByCodes(['system:signature:status']),
         unCheckedChildren: '禁用',
-        disabled: !hasAccessByCodes(['system:role:status']),
-        onChange: (checked: boolean) => handleStatusChange(record, checked),
+        onChange: (checked: unknown) =>
+          handleStatusChange(record, checked === true),
       });
     },
+  },
+  {
+    title: '备注',
+    dataIndex: 'remark',
+    width: 200,
+    ellipsis: true,
+    customRender: ({ record }: { record: SignatureInfo }) =>
+      record.remark || '-',
+  },
+  {
+    title: '创建人',
+    dataIndex: 'created_by_name',
+    width: 120,
+    customRender: ({ record }: { record: SignatureInfo }) =>
+      record.created_by_name || '-',
   },
   {
     title: '创建时间',
@@ -84,12 +118,12 @@ const columns = [
   {
     title: '操作',
     key: 'action',
-    width: 150,
+    width: 160,
     fixed: 'right',
-    customRender: ({ record }: { record: RoleInfo }) => {
+    customRender: ({ record }: { record: SignatureInfo }) => {
       const actions = [];
 
-      if (hasAccessByCodes(['system:role:edit'])) {
+      if (hasAccessByCodes(['system:signature:edit'])) {
         actions.push(
           h(
             Button,
@@ -106,7 +140,7 @@ const columns = [
         );
       }
 
-      if (hasAccessByCodes(['system:role:delete'])) {
+      if (hasAccessByCodes(['system:signature:delete'])) {
         actions.push(
           h(
             Button,
@@ -124,76 +158,63 @@ const columns = [
         );
       }
 
-      return actions.length > 0
-        ? h('div', { class: 'flex items-center gap-2' }, actions)
-        : h('span', { class: 'text-gray-400' }, '-');
+      return h('div', { class: 'flex items-center gap-2' }, actions);
     },
   },
 ];
 
-// 加载角色列表
-const loadRoleList = async () => {
+const loadSignatureList = async () => {
   try {
     loading.value = true;
-    const params = {
+    const data = await getSignatureListApi({
       page: page.value,
       page_size: pageSize.value,
       ...searchForm.value,
-    };
-    const data = await getRoleListApi(params);
-    roleList.value = data.list;
+    });
+    signatureList.value = data.list;
     total.value = data.total;
-  } catch (error) {
-    message.error('加载角色列表失败');
+  } catch {
+    message.error('加载签名列表失败');
   } finally {
     loading.value = false;
   }
 };
 
-// 搜索
 const handleSearch = () => {
   page.value = 1;
-  loadRoleList();
+  loadSignatureList();
 };
 
-// 重置搜索
 const handleReset = () => {
-  searchForm.value = {
-    name: '',
-    code: '',
-    status: undefined,
-  };
+  searchForm.value = { name: '', status: undefined };
   page.value = 1;
-  loadRoleList();
+  loadSignatureList();
 };
 
-// 新增角色
 const handleAdd = () => {
   formMode.value = 'create';
-  currentRole.value = null;
+  currentSignature.value = null;
   formModalVisible.value = true;
 };
 
-// 编辑角色
-const handleEdit = (record: RoleInfo) => {
+const handleEdit = (record: SignatureInfo) => {
   formMode.value = 'edit';
-  currentRole.value = { ...record };
+  currentSignature.value = { ...record };
   formModalVisible.value = true;
 };
 
-// 删除角色
-const handleDelete = (record: RoleInfo) => {
+const handleDelete = (record: SignatureInfo) => {
   Modal.confirm({
     title: '确认删除',
-    content: `确定要删除角色「${record.name}」吗？`,
+    content: `确定要删除「${record.name}」的签名吗？已签发的报告和证书不受影响。`,
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
     async onOk() {
       try {
-        await deleteRoleApi(record.id!);
+        await deleteSignatureApi(record.id!);
         message.success('删除成功');
-        await loadRoleList();
+        await loadSignatureList();
       } catch (error: any) {
         message.error(error.message || '删除失败');
       }
@@ -201,11 +222,10 @@ const handleDelete = (record: RoleInfo) => {
   });
 };
 
-// 修改状态
-const handleStatusChange = async (record: RoleInfo, checked: boolean) => {
+const handleStatusChange = async (record: SignatureInfo, checked: boolean) => {
   try {
-    const status = checked ? RoleStatus.ENABLED : RoleStatus.DISABLED;
-    await changeRoleStatusApi(record.id!, status);
+    const status = checked ? SignatureStatus.ENABLED : SignatureStatus.DISABLED;
+    await changeSignatureStatusApi(record.id!, status);
     message.success('状态修改成功');
     record.status = status;
   } catch (error: any) {
@@ -213,103 +233,95 @@ const handleStatusChange = async (record: RoleInfo, checked: boolean) => {
   }
 };
 
-// 分页变化
 const handlePageChange = (newPage: number, newPageSize: number) => {
   page.value = newPage;
   pageSize.value = newPageSize;
-  loadRoleList();
+  loadSignatureList();
 };
 
-// 表单提交成功
 const handleFormSuccess = () => {
   formModalVisible.value = false;
-  loadRoleList();
+  loadSignatureList();
 };
 
 onMounted(() => {
-  loadRoleList();
+  loadSignatureList();
 });
 </script>
 
 <template>
   <Page
     auto-content-height
-    description="系统角色管理，支持角色权限配置"
-    title="角色管理"
+    description="预存签名图片库，供测试报告、检定证书、校准证书选用"
+    title="签名管理"
   >
     <template #extra>
-      <Button v-access:code="['system:role:add']" type="primary" @click="handleAdd">
+      <Button
+        v-if="hasAccessByCodes(['system:signature:add'])"
+        type="primary"
+        @click="handleAdd"
+      >
         <template #icon>
-          <i class="i-ant-design:plus-outlined" />
+          <i class="i-ant-design:plus-outlined"></i>
         </template>
-        新增角色
+        新增签名
       </Button>
     </template>
 
-    <!-- 搜索表单 -->
-    <div class="mb-4 p-4 bg-white rounded">
+    <div class="mb-4 rounded bg-white p-4">
       <Space :size="16" wrap>
         <Input
           v-model:value="searchForm.name"
-          placeholder="角色名称"
           allow-clear
-          style="width: 200px"
-          @pressEnter="handleSearch"
-        />
-        <Input
-          v-model:value="searchForm.code"
-          placeholder="角色编码"
-          allow-clear
-          style="width: 200px"
-          @pressEnter="handleSearch"
+          placeholder="签名人姓名"
+          style="width: 180px"
+          @press-enter="handleSearch"
         />
         <Select
           v-model:value="searchForm.status"
-          placeholder="状态"
-          :options="statusOptions"
           allow-clear
+          :options="statusOptions"
+          placeholder="状态"
           style="width: 120px"
         />
         <Button type="primary" @click="handleSearch">
           <template #icon>
-            <i class="i-ant-design:search-outlined" />
+            <i class="i-ant-design:search-outlined"></i>
           </template>
           搜索
         </Button>
         <Button @click="handleReset">
           <template #icon>
-            <i class="i-ant-design:reload-outlined" />
+            <i class="i-ant-design:reload-outlined"></i>
           </template>
           重置
         </Button>
       </Space>
     </div>
 
-    <!-- 表格 -->
     <Table
+      bordered
       :columns="columns"
-      :data-source="roleList"
+      :data-source="signatureList"
       :loading="loading"
       :pagination="{
         current: page,
-        pageSize: pageSize,
-        total: total,
+        pageSize,
+        total,
         showSizeChanger: true,
         showQuickJumper: true,
-        showTotal: (total: number) => `共 ${total} 条`,
+        showTotal: (t: number) => `共 ${t} 条`,
         onChange: handlePageChange,
       }"
-      :scroll="{ x: 1200 }"
-      bordered
       row-key="id"
+      :scroll="{ x: 1200 }"
       size="middle"
     />
 
-    <!-- 角色表单弹窗 -->
-    <RoleForm
+    <SignatureForm
       v-model:visible="formModalVisible"
-      :role-data="currentRole"
       :mode="formMode"
+      :signature-data="currentSignature"
       @success="handleFormSuccess"
     />
   </Page>
