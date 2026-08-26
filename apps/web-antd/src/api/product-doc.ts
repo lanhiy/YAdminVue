@@ -1,16 +1,6 @@
 import { requestClient } from '#/api/request';
 
 /**
- * 单据状态枚举（测试报告 / 检定证书 / 校准证书共用）
- */
-export enum DocStatus {
-  /** 禁用 */
-  DISABLED = 0,
-  /** 启用 */
-  ENABLED = 1,
-}
-
-/**
  * 单据上附带的产品简要信息（后端附加）
  */
 export interface DocProductBrief {
@@ -32,7 +22,6 @@ interface DocBase {
   unit_name?: string;
   total_pages?: number;
   remark?: string;
-  status: DocStatus;
   created_by?: number;
   updated_by?: number;
   created_by_name?: string;

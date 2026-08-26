@@ -1,4 +1,3 @@
-export * from './certificate';
 export * from './core';
 export * from './product';
 export * from './product-doc';

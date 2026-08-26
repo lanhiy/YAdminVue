@@ -14,17 +14,13 @@ import {
   Input,
   message,
   Modal,
-  Select,
   Space,
-  Switch,
   Table,
 } from 'ant-design-vue';
 
 import {
-  changeSignatureStatusApi,
   deleteSignatureApi,
   getSignatureListApi,
-  SignatureStatus,
 } from '#/api';
 import { resolveAssetUrl } from '#/utils/asset';
 
@@ -43,13 +39,7 @@ const currentSignature = ref<null | SignatureInfo>(null);
 
 const searchForm = ref({
   name: '',
-  status: undefined as number | undefined,
 });
-
-const statusOptions = [
-  { label: '启用', value: SignatureStatus.ENABLED },
-  { label: '禁用', value: SignatureStatus.DISABLED },
-];
 
 const columns: TableColumnsType = [
   {
@@ -79,21 +69,6 @@ const columns: TableColumnsType = [
     title: '排序',
     dataIndex: 'sort',
     width: 80,
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    width: 100,
-    customRender: ({ record }: { record: SignatureInfo }) => {
-      return h(Switch, {
-        checked: record.status === SignatureStatus.ENABLED,
-        checkedChildren: '启用',
-        disabled: !hasAccessByCodes(['system:signature:status']),
-        unCheckedChildren: '禁用',
-        onChange: (checked: unknown) =>
-          handleStatusChange(record, checked === true),
-      });
-    },
   },
   {
     title: '备注',
@@ -186,7 +161,7 @@ const handleSearch = () => {
 };
 
 const handleReset = () => {
-  searchForm.value = { name: '', status: undefined };
+  searchForm.value = { name: '' };
   page.value = 1;
   loadSignatureList();
 };
@@ -220,17 +195,6 @@ const handleDelete = (record: SignatureInfo) => {
       }
     },
   });
-};
-
-const handleStatusChange = async (record: SignatureInfo, checked: boolean) => {
-  try {
-    const status = checked ? SignatureStatus.ENABLED : SignatureStatus.DISABLED;
-    await changeSignatureStatusApi(record.id!, status);
-    message.success('状态修改成功');
-    record.status = status;
-  } catch (error: any) {
-    message.error(error.message || '状态修改失败');
-  }
 };
 
 const handlePageChange = (newPage: number, newPageSize: number) => {
@@ -268,21 +232,14 @@ onMounted(() => {
       </Button>
     </template>
 
-    <div class="mb-4 rounded bg-white p-4">
-      <Space :size="16" wrap>
+    <div class="bg-card mb-2 rounded p-3">
+      <Space :size="8" wrap>
         <Input
           v-model:value="searchForm.name"
           allow-clear
           placeholder="签名人姓名"
           style="width: 180px"
           @press-enter="handleSearch"
-        />
-        <Select
-          v-model:value="searchForm.status"
-          allow-clear
-          :options="statusOptions"
-          placeholder="状态"
-          style="width: 120px"
         />
         <Button type="primary" @click="handleSearch">
           <template #icon>
@@ -314,8 +271,9 @@ onMounted(() => {
         onChange: handlePageChange,
       }"
       row-key="id"
-      :scroll="{ x: 1200 }"
-      size="middle"
+      :scroll="{ x: 1100 }"
+      size="small"
+      sticky
     />
 
     <SignatureForm

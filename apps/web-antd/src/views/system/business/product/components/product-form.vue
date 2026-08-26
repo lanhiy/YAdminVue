@@ -6,17 +6,18 @@ import type { ProductInfo } from '#/api';
 import { computed, ref, watch } from 'vue';
 
 import {
+  Col,
   Form,
   FormItem,
   Input,
   InputNumber,
   message,
   Modal,
-  RadioGroup,
+  Row,
   Textarea,
 } from 'ant-design-vue';
 
-import { createProductApi, ProductStatus, updateProductApi } from '#/api';
+import { createProductApi, updateProductApi } from '#/api';
 
 interface Props {
   visible: boolean;
@@ -41,15 +42,9 @@ const createDefaultForm = (): ProductInfo => ({
   unit_name: '',
   remark: '',
   sort: 0,
-  status: ProductStatus.ENABLED,
 });
 
 const formData = ref<ProductInfo>(createDefaultForm());
-
-const statusOptions = [
-  { label: '启用', value: ProductStatus.ENABLED },
-  { label: '禁用', value: ProductStatus.DISABLED },
-];
 
 const modalTitle = computed(() =>
   props.mode === 'create' ? '新增产品' : '编辑产品',
@@ -62,7 +57,6 @@ const rules: FormProps['rules'] = {
   instrument_no: [
     { required: true, message: '请输入器具编号', trigger: 'blur' },
   ],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 };
 
 watch(
@@ -118,73 +112,90 @@ const handleClose = () => {
   >
     <Form
       ref="formRef"
-      class="mt-4"
-      :label-col="{ span: 5 }"
+      :label-col="{ span: 6 }"
       :model="formData"
       :rules="rules"
-      :wrapper-col="{ span: 17 }"
+      :wrapper-col="{ span: 18 }"
     >
-      <FormItem label="器具名称" name="instrument_name">
-        <Input
-          v-model:value="formData.instrument_name"
-          allow-clear
-          placeholder="请输入器具名称"
-        />
-      </FormItem>
+      <!-- 两列栅格，减少字段纵向占用 -->
+      <Row :gutter="24">
+        <Col :span="12">
+          <FormItem label="器具名称" name="instrument_name">
+            <Input
+              v-model:value="formData.instrument_name"
+              allow-clear
+              placeholder="请输入器具名称"
+            />
+          </FormItem>
+        </Col>
 
-      <FormItem label="器具编号" name="instrument_no">
-        <Input
-          v-model:value="formData.instrument_no"
-          allow-clear
-          placeholder="请输入器具编号，需唯一"
-        />
-      </FormItem>
+        <Col :span="12">
+          <FormItem label="器具编号" name="instrument_no">
+            <Input
+              v-model:value="formData.instrument_no"
+              allow-clear
+              placeholder="请输入器具编号，需唯一"
+            />
+          </FormItem>
+        </Col>
 
-      <FormItem label="型号" name="model">
-        <Input
-          v-model:value="formData.model"
-          allow-clear
-          placeholder="请输入型号"
-        />
-      </FormItem>
+        <Col :span="12">
+          <FormItem label="型号" name="model">
+            <Input
+              v-model:value="formData.model"
+              allow-clear
+              placeholder="请输入型号"
+            />
+          </FormItem>
+        </Col>
 
-      <FormItem label="制造厂商" name="manufacturer">
-        <Input
-          v-model:value="formData.manufacturer"
-          allow-clear
-          placeholder="请输入制造厂商"
-        />
-      </FormItem>
+        <Col :span="12">
+          <FormItem label="制造厂商" name="manufacturer">
+            <Input
+              v-model:value="formData.manufacturer"
+              allow-clear
+              placeholder="请输入制造厂商"
+            />
+          </FormItem>
+        </Col>
 
-      <FormItem label="单位名称" name="unit_name">
-        <Input
-          v-model:value="formData.unit_name"
-          allow-clear
-          placeholder="请输入单位名称"
-        />
-      </FormItem>
+        <Col :span="12">
+          <FormItem label="单位名称" name="unit_name">
+            <Input
+              v-model:value="formData.unit_name"
+              allow-clear
+              placeholder="请输入单位名称"
+            />
+          </FormItem>
+        </Col>
 
-      <FormItem label="排序" name="sort">
-        <InputNumber
-          v-model:value="formData.sort"
-          class="w-full"
-          :min="0"
-          placeholder="请输入排序"
-        />
-      </FormItem>
+        <Col :span="12">
+          <FormItem label="排序" name="sort">
+            <InputNumber
+              v-model:value="formData.sort"
+              class="w-full"
+              :min="0"
+              placeholder="请输入排序"
+            />
+          </FormItem>
+        </Col>
 
-      <FormItem label="状态" name="status">
-        <RadioGroup v-model:value="formData.status" :options="statusOptions" />
-      </FormItem>
-
-      <FormItem label="备注" name="remark">
-        <Textarea
-          v-model:value="formData.remark"
-          allow-clear
-          placeholder="请输入备注"
-          :rows="3"
-        />
-      </FormItem>
+        <Col :span="24">
+          <FormItem
+            label="备注"
+            name="remark"
+            :label-col="{ span: 3 }"
+            :wrapper-col="{ span: 21 }"
+          >
+            <Textarea
+              v-model:value="formData.remark"
+              allow-clear
+              placeholder="请输入备注"
+              :rows="4"
+            />
+          </FormItem>
+        </Col>
+      </Row>
     </Form>
   </Modal>
 </template>

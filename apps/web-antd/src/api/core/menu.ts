@@ -2,13 +2,13 @@
 import type { RouteRecordStringComponent } from '@vben/types';
 import { requestClient } from '#/api/request';
 
-/** 菜单类型 */
+/** 菜单、目录和按钮共同组成 RBAC 授权树。 */
 export enum MenuType {
-  /** 目录 */
+  /** 目录：可见性由子节点推导 */
   CATALOG = 1,
-  /** 菜单 */
+  /** 页面菜单 */
   MENU = 2,
-  /** 按钮 */
+  /** 按钮：authority 是后端接口权限码 */
   BUTTON = 3,
 }
 
@@ -37,6 +37,7 @@ export interface MenuInfo {
   hide_in_breadcrumb?: number;
   hide_children_in_menu?: number;
   keep_alive?: number;
+  /** 按钮权限码列表，来自 system_menu.authority */
   authority?: string[];
   ignore_access?: number;
   menu_visible_with_forbidden?: number;

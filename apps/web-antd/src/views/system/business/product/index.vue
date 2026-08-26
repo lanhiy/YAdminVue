@@ -18,18 +18,12 @@ import {
   MenuItem,
   message,
   Modal,
-  Select,
   Space,
-  Switch,
   Table,
+  Tooltip,
 } from 'ant-design-vue';
 
-import {
-  changeProductStatusApi,
-  deleteProductApi,
-  getProductListApi,
-  ProductStatus,
-} from '#/api';
+import { deleteProductApi, getProductListApi } from '#/api';
 
 import CalibrationCertForm from './components/calibration-cert-form.vue';
 import ProductForm from './components/product-form.vue';
@@ -61,13 +55,7 @@ const searchForm = ref({
   model: '',
   manufacturer: '',
   unit_name: '',
-  status: undefined as number | undefined,
 });
-
-const statusOptions = [
-  { label: '启用', value: ProductStatus.ENABLED },
-  { label: '禁用', value: ProductStatus.DISABLED },
-];
 
 /** 打开某张子表的弹窗 */
 const handleOpenDoc = (
@@ -158,26 +146,34 @@ const buildDocMenu = (record: ProductInfo) => {
 
 const columns: TableColumnsType = [
   {
+    title: 'ID',
+    dataIndex: 'id',
+    width: 70,
+    align: 'center',
+  },
+  {
     title: '器具名称',
     dataIndex: 'instrument_name',
-    width: 180,
+    width: 150,
     ellipsis: true,
   },
   {
     title: '器具编号',
     dataIndex: 'instrument_no',
-    width: 140,
+    width: 130,
+    ellipsis: true,
   },
   {
     title: '型号',
     dataIndex: 'model',
-    width: 130,
+    width: 110,
+    ellipsis: true,
     customRender: ({ record }: { record: ProductInfo }) => record.model || '-',
   },
   {
     title: '制造厂商',
     dataIndex: 'manufacturer',
-    width: 180,
+    width: 140,
     ellipsis: true,
     customRender: ({ record }: { record: ProductInfo }) =>
       record.manufacturer || '-',
@@ -185,7 +181,7 @@ const columns: TableColumnsType = [
   {
     title: '单位名称',
     dataIndex: 'unit_name',
-    width: 200,
+    width: 160,
     ellipsis: true,
     customRender: ({ record }: { record: ProductInfo }) =>
       record.unit_name || '-',
@@ -193,57 +189,68 @@ const columns: TableColumnsType = [
   {
     title: '报告/证书',
     key: 'docs',
-    width: 190,
+    width: 130,
+    align: 'center',
     customRender: ({ record }: { record: ProductInfo }) => {
+      // 横排紧凑显示：竖排会让行高翻三倍，单屏可见行数骤减
       const marks = [
-        { label: '测试报告', recorded: record.has_test_report },
-        { label: '检定证书', recorded: record.has_verification_cert },
-        { label: '校准证书', recorded: record.has_calibration_cert },
+        { label: '测', title: '测试报告', recorded: record.has_test_report },
+        {
+          label: '检',
+          title: '检定证书',
+          recorded: record.has_verification_cert,
+        },
+        {
+          label: '校',
+          title: '校准证书',
+          recorded: record.has_calibration_cert,
+        },
       ];
 
       return h(
         'div',
-        { class: 'flex flex-col gap-0.5' },
+        { class: 'flex items-center justify-center gap-1.5' },
         marks.map((mark) =>
-          h(Badge, {
-            status: mark.recorded ? 'success' : 'default',
-            text: mark.label,
-          }),
+          h(
+            Tooltip,
+            { title: `${mark.title}：${mark.recorded ? '已录入' : '未录入'}` },
+            {
+              default: () =>
+                h(
+                  'span',
+                  {
+                    class: [
+                      'inline-flex h-5 w-5 items-center justify-center rounded text-xs',
+                      mark.recorded
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-400',
+                    ],
+                  },
+                  mark.label,
+                ),
+            },
+          ),
         ),
       );
     },
   },
   {
-    title: '状态',
-    dataIndex: 'status',
-    width: 100,
-    customRender: ({ record }: { record: ProductInfo }) => {
-      return h(Switch, {
-        checked: record.status === ProductStatus.ENABLED,
-        checkedChildren: '启用',
-        disabled: !hasAccessByCodes(['system:product:status']),
-        unCheckedChildren: '禁用',
-        onChange: (checked: unknown) =>
-          handleStatusChange(record, checked === true),
-      });
-    },
-  },
-  {
     title: '创建人',
     dataIndex: 'created_by_name',
-    width: 110,
+    width: 90,
+    ellipsis: true,
     customRender: ({ record }: { record: ProductInfo }) =>
       record.created_by_name || '-',
   },
   {
     title: '创建时间',
     dataIndex: 'created_at',
-    width: 180,
+    width: 150,
   },
   {
     title: '操作',
     key: 'action',
-    width: 260,
+    width: 230,
     fixed: 'right',
     customRender: ({ record }: { record: ProductInfo }) => {
       const actions = [];
@@ -345,7 +352,6 @@ const handleReset = () => {
     model: '',
     manufacturer: '',
     unit_name: '',
-    status: undefined,
   };
   page.value = 1;
   loadProductList();
@@ -380,17 +386,6 @@ const handleDelete = (record: ProductInfo) => {
       }
     },
   });
-};
-
-const handleStatusChange = async (record: ProductInfo, checked: boolean) => {
-  try {
-    const status = checked ? ProductStatus.ENABLED : ProductStatus.DISABLED;
-    await changeProductStatusApi(record.id!, status);
-    message.success('状态修改成功');
-    record.status = status;
-  } catch (error: any) {
-    message.error(error.message || '状态修改失败');
-  }
 };
 
 const handlePageChange = (newPage: number, newPageSize: number) => {
@@ -434,8 +429,8 @@ onMounted(() => {
     </template>
 
     <!-- 搜索表单 -->
-    <div class="mb-4 rounded bg-white p-4">
-      <Space :size="16" wrap>
+    <div class="bg-card mb-2 rounded p-3">
+      <Space :size="8" wrap>
         <Input
           v-model:value="searchForm.instrument_name"
           allow-clear
@@ -471,13 +466,6 @@ onMounted(() => {
           style="width: 180px"
           @press-enter="handleSearch"
         />
-        <Select
-          v-model:value="searchForm.status"
-          allow-clear
-          :options="statusOptions"
-          placeholder="状态"
-          style="width: 110px"
-        />
         <Button type="primary" @click="handleSearch">
           <template #icon>
             <i class="i-ant-design:search-outlined"></i>
@@ -493,7 +481,7 @@ onMounted(() => {
       </Space>
     </div>
 
-    <!-- 表格 -->
+    <!-- 表格：列宽合计 1360，仅在窗口确实不足时才出现横向滚动 -->
     <Table
       bordered
       :columns="columns"
@@ -505,12 +493,14 @@ onMounted(() => {
         total,
         showSizeChanger: true,
         showQuickJumper: true,
+        size: 'small',
         showTotal: (t: number) => `共 ${t} 条`,
         onChange: handlePageChange,
       }"
       row-key="id"
-      :scroll="{ x: 1700 }"
-      size="middle"
+      :scroll="{ x: 1360 }"
+      size="small"
+      sticky
     />
 
     <!-- 产品表单 -->

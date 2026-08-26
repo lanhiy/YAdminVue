@@ -1,5 +1,6 @@
-<!-- src/views/system/menu/components/menu-form.vue -->
 <script setup lang="ts">
+import type { FormProps } from 'ant-design-vue';
+
 import type { MenuInfo } from '#/api';
 
 import { computed, ref, watch } from 'vue';
@@ -13,6 +14,7 @@ import {
   message,
   Modal,
   RadioGroup,
+  Select,
   Switch,
   Textarea,
   TreeSelect,
@@ -43,129 +45,105 @@ const formData = ref<MenuInfo>({
   path: '',
   type: MenuType.MENU,
   title: '',
+  authority: [],
   status: MenuStatus.ENABLED,
   sort: 0,
 } as MenuInfo);
 
-// 菜单类型选项
 const menuTypeOptions = [
   { label: '目录', value: MenuType.CATALOG },
   { label: '菜单', value: MenuType.MENU },
   { label: '按钮', value: MenuType.BUTTON },
 ];
-
-// 状态选项
 const statusOptions = [
   { label: '启用', value: MenuStatus.ENABLED },
   { label: '禁用', value: MenuStatus.DISABLED },
 ];
+const modalTitle = computed(() => (props.mode === 'create' ? '新增节点' : '编辑节点'));
+const isButton = computed(() => formData.value.type === MenuType.BUTTON);
 
-// 表单标题
-const modalTitle = computed(() => {
-  return props.mode === 'create' ? '新增菜单' : '编辑菜单';
-});
-
-// 构建父菜单树形选项
-const buildMenuTree = (menus: MenuInfo[]): any[] => {
-  return menus
-    .filter((menu) => menu.type !== MenuType.BUTTON) // 排除按钮类型
+const buildMenuTree = (menus: MenuInfo[]): any[] =>
+  menus
+    .filter((menu) => menu.type !== MenuType.BUTTON && menu.id !== formData.value.id)
     .map((menu) => ({
       label: menu.title,
       value: menu.id,
-      children:
-        menu.children && menu.children.length > 0
-          ? buildMenuTree(menu.children)
-          : undefined,
+      children: menu.children?.length ? buildMenuTree(menu.children) : undefined,
     }));
-};
+const parentMenuOptions = computed(() => [{ label: '根菜单', value: 0 }, ...buildMenuTree(props.menuList)]);
 
-// 父菜单选项
-const parentMenuOptions = computed(() => {
-  return [{ label: '根菜单', value: 0 }, ...buildMenuTree(props.menuList)];
-});
-
-// 根据路由路径推导组件路径，如 /test -> /views/test/index
-function resolveComponentPath(path: string) {
-  const segment = path.replace(/^\//, '').split('/').find(Boolean);
-  if (!segment) {
-    return '';
-  }
-  return `/views/${segment}/index`;
-}
-
-// 表单规则
-const rules = computed(() => ({
-  name: [{ required: true, message: '请输入路由名称', trigger: 'blur' }],
-  path: [{ required: true, message: '请输入路由路径', trigger: 'blur' }],
-  title: [{ required: true, message: '请输入菜单标题', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
-  component:
-    formData.value.type === MenuType.MENU
-      ? [{ required: true, message: '请输入组件路径', trigger: 'blur' }]
-      : [],
+const rules = computed<FormProps['rules']>(() => ({
+  name: [{ required: true, message: '请输入节点名称', trigger: 'blur' }],
+  title: [{ required: true, message: '请输入节点标题', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择节点类型', trigger: 'change' }],
+  path: isButton.value ? [] : [{ required: true, message: '请输入路由路径', trigger: 'blur' }],
+  component: isButton.value || formData.value.type === MenuType.CATALOG
+    ? []
+    : [{ required: true, message: '请输入组件路径', trigger: 'blur' }],
+  authority: isButton.value
+    ? [{ required: true, type: 'array', min: 1, message: '请输入至少一个权限码', trigger: 'change' }]
+    : [],
 }));
 
-// 路由路径变化时自动补全组件路径
-watch(
-  () => formData.value.path,
-  (path) => {
-    if (formData.value.type !== MenuType.MENU || !path) {
-      return;
-    }
-    if (!formData.value.component) {
-      formData.value.component = resolveComponentPath(path);
-    }
-  },
-);
-
-// 监听弹窗显示
 watch(
   () => props.visible,
-  (val) => {
-    if (val && props.menuData) {
-      formData.value = { ...props.menuData };
+  (visible) => {
+    if (!visible) return;
+    formData.value = props.menuData
+      ? { ...props.menuData, authority: [...(props.menuData.authority ?? [])] }
+      : {
+          parent_id: 0,
+          name: '',
+          path: '',
+          type: MenuType.MENU,
+          title: '',
+          authority: [],
+          status: MenuStatus.ENABLED,
+          sort: 0,
+        } as MenuInfo;
+  },
+);
+
+watch(
+  () => formData.value.type,
+  (type) => {
+    if (type === MenuType.BUTTON) {
+      formData.value.path = '';
+      formData.value.component = '';
+      formData.value.redirect = '';
+    } else if (!formData.value.component && formData.value.path) {
+      formData.value.component = `/views/${formData.value.path.replace(/^\//, '').split('/')[0]}/index`;
     }
   },
 );
 
-// 提交表单
 const handleSubmit = async () => {
   try {
     await formRef.value.validate();
     loading.value = true;
-
-    // 处理 authority 和 query 字段
-    const submitData = { ...formData.value };
-    if (typeof submitData.authority === 'string') {
-      submitData.authority = JSON.parse(submitData.authority as any);
-    }
-    if (typeof submitData.query === 'string') {
-      submitData.query = JSON.parse(submitData.query as any);
-    }
-
+    const submitData = {
+      ...formData.value,
+      authority: formData.value.authority ?? [],
+      query: typeof formData.value.query === 'string'
+        ? JSON.parse(formData.value.query as any)
+        : formData.value.query,
+    };
     if (props.mode === 'create') {
       await createMenuApi(submitData);
-      message.success('创建成功');
     } else {
       await updateMenuApi(formData.value.id!, submitData);
-      message.success('更新成功');
     }
-
+    message.success(props.mode === 'create' ? '创建成功' : '更新成功');
     await refreshAccess(router);
     emit('success');
     handleClose();
   } catch (error: any) {
-    if (error.errorFields) {
-      return;
-    }
-    message.error(error.message || '操作失败');
+    if (!error?.errorFields) message.error(error?.message || '操作失败');
   } finally {
     loading.value = false;
   }
 };
 
-// 关闭弹窗
 const handleClose = () => {
   formRef.value?.resetFields();
   emit('update:visible', false);
@@ -174,135 +152,74 @@ const handleClose = () => {
 
 <template>
   <Modal
-    :title="modalTitle"
-    :open="visible"
     :confirm-loading="loading"
+    :open="visible"
+    :title="modalTitle"
     :width="800"
     @cancel="handleClose"
     @ok="handleSubmit"
   >
     <Form
       ref="formRef"
+      class="mt-4"
+      :label-col="{ span: 6 }"
       :model="formData"
       :rules="rules"
-      :label-col="{ span: 6 }"
       :wrapper-col="{ span: 16 }"
-      class="mt-4"
     >
-      <FormItem label="父级菜单" name="parent_id">
+      <FormItem label="父级节点" name="parent_id">
         <TreeSelect
           v-model:value="formData.parent_id"
-          :tree-data="parentMenuOptions"
-          placeholder="请选择父级菜单"
-          tree-default-expand-all
           allow-clear
+          :tree-data="parentMenuOptions"
+          placeholder="请选择父级节点"
+          tree-default-expand-all
         />
       </FormItem>
-
-      <FormItem label="菜单类型" name="type">
+      <FormItem label="节点类型" name="type">
         <RadioGroup v-model:value="formData.type" :options="menuTypeOptions" />
       </FormItem>
-
-      <FormItem label="菜单标题" name="title">
-        <Input
-          v-model:value="formData.title"
-          placeholder="请输入菜单标题"
+      <FormItem label="标题" name="title">
+        <Input v-model:value="formData.title" allow-clear placeholder="请输入标题" />
+      </FormItem>
+      <FormItem label="名称" name="name">
+        <Input v-model:value="formData.name" allow-clear placeholder="请输入路由名称或按钮名称" />
+      </FormItem>
+      <FormItem v-if="!isButton" label="路由路径" name="path">
+        <Input v-model:value="formData.path" allow-clear placeholder="请输入路由路径" />
+      </FormItem>
+      <FormItem v-if="!isButton" label="组件路径" name="component">
+        <Input v-model:value="formData.component" allow-clear placeholder="如：/views/system/index" />
+      </FormItem>
+      <FormItem v-if="isButton" label="权限码" name="authority">
+        <Select
+          v-model:value="formData.authority"
+          mode="tags"
           allow-clear
+          placeholder="输入后回车，例如 system:role:edit"
         />
+        <template #extra>权限码必须与后端 Permission 注解一致。</template>
       </FormItem>
-
-      <FormItem label="路由名称" name="name">
-        <Input
-          v-model:value="formData.name"
-          placeholder="请输入路由名称（英文）"
-          allow-clear
-        />
+      <FormItem v-if="!isButton" label="重定向" name="redirect">
+        <Input v-model:value="formData.redirect" allow-clear placeholder="请输入重定向路径" />
       </FormItem>
-
-      <FormItem label="路由路径" name="path">
-        <Input
-          v-model:value="formData.path"
-          placeholder="请输入路由路径"
-          allow-clear
-        />
+      <FormItem label="图标" name="icon">
+        <Input v-model:value="formData.icon" allow-clear placeholder="请输入图标类名" />
       </FormItem>
-
-      <FormItem
-        label="组件路径"
-        name="component"
-        v-if="formData.type !== MenuType.BUTTON"
-      >
-        <Input
-          v-model:value="formData.component"
-          placeholder="如：/views/test/index"
-          allow-clear
-        />
-      </FormItem>
-
-      <FormItem label="重定向" name="redirect">
-        <Input
-          v-model:value="formData.redirect"
-          placeholder="请输入重定向路径"
-          allow-clear
-        />
-      </FormItem>
-
-      <FormItem label="菜单图标" name="icon">
-        <Input
-          v-model:value="formData.icon"
-          placeholder="请输入图标类名"
-          allow-clear
-        >
-          <template #prefix v-if="formData.icon">
-            <i :class="formData.icon"></i>
-          </template>
-        </Input>
-      </FormItem>
-
       <FormItem label="排序" name="sort">
-        <InputNumber
-          v-model:value="formData.sort"
-          :min="0"
-          placeholder="请输入排序"
-          class="w-full"
-        />
+        <InputNumber v-model:value="formData.sort" class="w-full" :min="0" />
       </FormItem>
-
       <FormItem label="状态" name="status">
         <RadioGroup v-model:value="formData.status" :options="statusOptions" />
       </FormItem>
-
       <FormItem label="隐藏菜单" name="hide_in_menu">
-        <Switch
-          v-model:checked="formData.hide_in_menu"
-          :checked-value="1"
-          :un-checked-value="0"
-        />
+        <Switch v-model:checked="formData.hide_in_menu" :checked-value="1" :un-checked-value="0" />
       </FormItem>
-
       <FormItem label="缓存页面" name="keep_alive">
-        <Switch
-          v-model:checked="formData.keep_alive"
-          :checked-value="1"
-          :un-checked-value="0"
-        />
+        <Switch v-model:checked="formData.keep_alive" :checked-value="1" :un-checked-value="0" />
       </FormItem>
-
-      <FormItem label="外链地址" name="link">
-        <Input
-          v-model:value="formData.link"
-          placeholder="请输入外链地址"
-          allow-clear
-        />
-      </FormItem>
-
       <FormItem label="备注" name="remark">
-        <Textarea
-          v-model:value="formData.remark"
-          placeholder="请输入备注"
-          :rows="3"
-          allow-clear
-        />
+        <Textarea v-model:value="formData.remark" allow-clear :rows="3" placeholder="请输入备注" />
       </FormItem>
     </Form>
   </Modal>

@@ -13,14 +13,12 @@ import {
   InputNumber,
   message,
   Modal,
-  RadioGroup,
   Textarea,
   Upload,
 } from 'ant-design-vue';
 
 import {
   createSignatureApi,
-  SignatureStatus,
   updateSignatureApi,
   uploadImageApi,
 } from '#/api';
@@ -47,15 +45,9 @@ const createDefaultForm = (): SignatureInfo => ({
   image_url: '',
   remark: '',
   sort: 0,
-  status: SignatureStatus.ENABLED,
 });
 
 const formData = ref<SignatureInfo>(createDefaultForm());
-
-const statusOptions = [
-  { label: '启用', value: SignatureStatus.ENABLED },
-  { label: '禁用', value: SignatureStatus.DISABLED },
-];
 
 const modalTitle = computed(() =>
   props.mode === 'create' ? '新增签名' : '编辑签名',
@@ -213,9 +205,6 @@ const handleClose = () => {
         />
       </FormItem>
 
-      <FormItem label="状态" name="status">
-        <RadioGroup v-model:value="formData.status" :options="statusOptions" />
-      </FormItem>
 
       <FormItem label="备注" name="remark">
         <Textarea

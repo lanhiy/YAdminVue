@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TableColumnsType } from 'ant-design-vue';
+
 import { ref, onMounted, h } from 'vue';
 import { Icon } from '@iconify/vue';
 import { Modal } from 'ant-design-vue';
@@ -40,7 +42,7 @@ const statusOptions = [
 ];
 
 // 表格列配置
-const columns = [
+const columns: TableColumnsType = [
   {
     title: '角色名称',
     dataIndex: 'name',
@@ -72,7 +74,8 @@ const columns = [
         checkedChildren: '启用',
         unCheckedChildren: '禁用',
         disabled: !hasAccessByCodes(['system:role:status']),
-        onChange: (checked: boolean) => handleStatusChange(record, checked),
+        onChange: (checked: unknown) =>
+          handleStatusChange(record, checked === true),
       });
     },
   },

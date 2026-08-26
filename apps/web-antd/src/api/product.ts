@@ -1,16 +1,6 @@
 import { requestClient } from '#/api/request';
 
 /**
- * 产品状态枚举
- */
-export enum ProductStatus {
-  /** 禁用 */
-  DISABLED = 0,
-  /** 启用 */
-  ENABLED = 1,
-}
-
-/**
  * 产品（器具）信息
  */
 export interface ProductInfo {
@@ -27,7 +17,6 @@ export interface ProductInfo {
   unit_name?: string;
   remark?: string;
   sort?: number;
-  status: ProductStatus;
   created_by?: number;
   updated_by?: number;
   created_by_name?: string;
@@ -64,7 +53,6 @@ export interface ProductListParams {
   model?: string;
   manufacturer?: string;
   unit_name?: string;
-  status?: ProductStatus;
 }
 
 /**
@@ -119,17 +107,4 @@ export async function updateProductApi(id: number, data: ProductInfo) {
  */
 export async function deleteProductApi(id: number) {
   return requestClient.delete(`/system/business/product/${id}`);
-}
-
-/**
- * 修改产品状态
- */
-export async function changeProductStatusApi(
-  id: number,
-  status: ProductStatus,
-) {
-  return requestClient.post('/system/business/product/change-status', {
-    id,
-    status,
-  });
 }

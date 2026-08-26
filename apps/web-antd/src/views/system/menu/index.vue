@@ -1,5 +1,7 @@
 <!-- src/views/system/menu/index.vue -->
 <script setup lang="ts">
+import type { TableColumnsType } from 'ant-design-vue';
+
 import type { MenuInfo } from '#/api';
 
 import { h, onMounted, ref } from 'vue';
@@ -33,7 +35,7 @@ const formMode = ref<'create' | 'edit'>('create');
 const currentMenu = ref<MenuInfo | null>(null);
 
 // 表格列配置
-const columns = [
+const columns: TableColumnsType = [
   {
     title: '菜单名称',
     dataIndex: 'title',
@@ -75,14 +77,25 @@ const columns = [
       const typeMap = {
         [MenuType.CATALOG]: { text: '目录', color: '#1890ff' },
         [MenuType.MENU]: { text: '菜单', color: '#52c41a' },
-        [MenuType.BUTTON]: { text: '按钮', color: '#faad14' },
+        [MenuType.BUTTON]: { text: '按钮', color: '#fa8c16' },
       };
       const type = typeMap[record.type];
       return h(
         'span',
-        { style: { color: type.color, fontWeight: 500 } },
-        type.text,
+        { style: { color: type?.color, fontWeight: 500 } },
+        type?.text ?? '未知',
       );
+    },
+  },
+  {
+    title: '权限码',
+    dataIndex: 'authority',
+    width: 200,
+    customRender: ({ record }: { record: MenuInfo }) => {
+      const authorities = record.authority ?? [];
+      return authorities.length > 0
+        ? h('span', { class: 'text-xs text-gray-500' }, authorities.join(', '))
+        : h('span', { class: 'text-gray-400' }, record.type === MenuType.CATALOG ? '由子节点授权' : '登录可见');
     },
   },
   {
@@ -100,7 +113,8 @@ const columns = [
         checkedChildren: '启用',
         unCheckedChildren: '禁用',
         disabled: !hasAccessByCodes(['system:menu:status']),
-        onChange: (checked: boolean) => handleStatusChange(record, checked),
+        onChange: (checked: unknown) =>
+          handleStatusChange(record, checked === true),
       });
     },
   },
@@ -272,7 +286,7 @@ onMounted(() => {
       :data-source="menuList"
       :loading="loading"
       :pagination="false"
-      :scroll="{ x: 1200 }"
+      :scroll="{ x: 1400 }"
       bordered
       row-key="id"
       size="middle"

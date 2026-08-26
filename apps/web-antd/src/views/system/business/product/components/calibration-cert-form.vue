@@ -14,12 +14,10 @@ import {
   Input,
   InputNumber,
   Modal,
-  RadioGroup,
   Spin,
   Textarea,
 } from 'ant-design-vue';
 
-import { DocStatus } from '#/api';
 
 import { useProductDoc } from '../composables/use-product-doc';
 import SignaturePicker from './signature-picker.vue';
@@ -52,7 +50,6 @@ const createDefault = (productId: number): CalibrationCertInfo => ({
   issue_date: '',
   total_pages: 1,
   remark: '',
-  status: DocStatus.ENABLED,
 });
 
 const { formData, isEdit, load, loading, submit, submitting } =
@@ -61,11 +58,6 @@ const { formData, isEdit, load, loading, submit, submitting } =
     'calibrate_date',
     'issue_date',
   ]);
-
-const statusOptions = [
-  { label: '启用', value: DocStatus.ENABLED },
-  { label: '禁用', value: DocStatus.DISABLED },
-];
 
 const modalTitle = computed(() =>
   isEdit.value ? '编辑校准证书' : '新增校准证书',
@@ -231,12 +223,6 @@ const handleClose = () => {
           <SignaturePicker v-model:value="formData.calibrator_sign_img" />
         </FormItem>
 
-        <FormItem label="状态" name="status">
-          <RadioGroup
-            v-model:value="formData.status"
-            :options="statusOptions"
-          />
-        </FormItem>
 
         <FormItem label="备注" name="remark">
           <Textarea

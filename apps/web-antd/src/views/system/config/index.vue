@@ -98,9 +98,6 @@ const formData = reactive<SystemConfigInfo>({
   // 页脚配置
   footer_enable: true,
   footer_height: 48,
-
-  // 业务配置
-  certificate_query_url: '',
 });
 
 // 加载配置
@@ -707,30 +704,6 @@ onMounted(() => {
           </Form>
         </TabPane>
 
-        <!-- 业务配置 -->
-        <TabPane key="business" tab="业务配置">
-          <Form
-            :model="formData"
-            :label-col="{ span: 5 }"
-            :wrapper-col="{ span: 14 }"
-          >
-            <FormItem label="证书查询URL" name="certificate_query_url">
-              <Input
-                v-model:value="formData.certificate_query_url"
-                placeholder="例如: https://www.example.com/cx?code="
-              />
-              <template #extra>
-                证书二维码的地址前缀，系统会自动在其后拼接证书ID生成二维码
-              </template>
-            </FormItem>
-
-            <FormItem :wrapper-col="{ offset: 5 }">
-              <Button type="primary" :loading="loading" @click="handleSubmit">
-                保存配置
-              </Button>
-            </FormItem>
-          </Form>
-        </TabPane>
       </Tabs>
     </Card>
   </Page>

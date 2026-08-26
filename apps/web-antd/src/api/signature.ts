@@ -1,16 +1,6 @@
 import { requestClient } from '#/api/request';
 
 /**
- * 签名状态枚举
- */
-export enum SignatureStatus {
-  /** 禁用 */
-  DISABLED = 0,
-  /** 启用 */
-  ENABLED = 1,
-}
-
-/**
  * 签名信息
  */
 export interface SignatureInfo {
@@ -21,7 +11,6 @@ export interface SignatureInfo {
   image_url: string;
   remark?: string;
   sort?: number;
-  status: SignatureStatus;
   created_by?: number;
   updated_by?: number;
   created_by_name?: string;
@@ -46,7 +35,6 @@ export interface SignatureListParams {
   page?: number;
   page_size?: number;
   name?: string;
-  status?: SignatureStatus;
 }
 
 /**
@@ -107,17 +95,4 @@ export async function updateSignatureApi(id: number, data: SignatureInfo) {
  */
 export async function deleteSignatureApi(id: number) {
   return requestClient.delete(`/system/business/signature/${id}`);
-}
-
-/**
- * 修改签名状态
- */
-export async function changeSignatureStatusApi(
-  id: number,
-  status: SignatureStatus,
-) {
-  return requestClient.post('/system/business/signature/change-status', {
-    id,
-    status,
-  });
 }

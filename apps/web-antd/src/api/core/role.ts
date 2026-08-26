@@ -21,7 +21,10 @@ export interface RoleInfo {
   description?: string;
   sort?: number;
   status: RoleStatus;
+  /** 授权的菜单和按钮节点ID列表 */
   menu_ids?: number[];
+  /** ID=1 的部署角色拥有全部权限 */
+  is_super?: number;
   created_at?: string;
   updated_at?: string;
 }

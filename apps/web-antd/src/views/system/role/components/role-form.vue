@@ -1,224 +1,162 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import type { FormProps } from 'ant-design-vue';
+import type { Key } from 'ant-design-vue/es/_util/type';
+
+import type { MenuInfo, RoleInfo } from '#/api';
+
+import { computed, ref, watch } from 'vue';
+
 import {
-  Modal,
+  Col,
   Form,
   FormItem,
   Input,
   InputNumber,
-  Radio,
-  RadioGroup,
-  Tree,
-  Textarea,
   message,
+  Modal,
+  RadioGroup,
+  Row,
+  Spin,
   Tag,
+  Textarea,
+  Tree,
 } from 'ant-design-vue';
-import {
-  createRoleApi,
-  updateRoleApi,
-  type RoleInfo,
-  RoleStatus,
-} from '#/api';
-import { getMenuListApi, type MenuInfo, MenuType } from '#/api';
+
+import { createRoleApi, getMenuListApi, RoleStatus, updateRoleApi } from '#/api';
 
 interface Props {
   visible: boolean;
   mode: 'create' | 'edit';
-  roleData: RoleInfo | null;
+  roleData: null | RoleInfo;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-  'update:visible': [value: boolean];
   success: [];
+  'update:visible': [value: boolean];
 }>();
 
 const formRef = ref();
 const loading = ref(false);
-const menuTreeData = ref<any[]>([]);
-const checkedKeys = ref<number[]>([]);
-const halfCheckedKeys = ref<number[]>([]);
-const allMenuData = ref<MenuInfo[]>([]);
+const treeLoading = ref(false);
+const menuTree = ref<MenuInfo[]>([]);
+const checkedKeys = ref<Key[]>([]);
+const halfCheckedKeys = ref<Key[]>([]);
 
-const formData = ref<RoleInfo>({
+const createDefaultForm = (): RoleInfo => ({
   name: '',
   code: '',
   description: '',
   sort: 0,
   status: RoleStatus.ENABLED,
   menu_ids: [],
-} as RoleInfo);
+});
 
-// 状态选项
+const formData = ref<RoleInfo>(createDefaultForm());
 const statusOptions = [
   { label: '启用', value: RoleStatus.ENABLED },
   { label: '禁用', value: RoleStatus.DISABLED },
 ];
+const modalTitle = computed(() =>
+  props.mode === 'create' ? '新增角色' : '编辑角色',
+);
+const isSuperRole = computed(() => props.roleData?.id === 1 || props.roleData?.is_super === 1);
 
-// 表单标题
-const modalTitle = computed(() => {
-  return props.mode === 'create' ? '新增角色' : '编辑角色';
+const toTreeData = (menus: MenuInfo[]): any[] =>
+  menus.map((menu) => ({
+    key: menu.id,
+    title: menu.title,
+    menuType: menu.type,
+    authority: menu.authority ?? [],
+    children: toTreeData(menu.children ?? []),
+  }));
+
+const treeData = computed(() => toTreeData(menuTree.value));
+const allNodeCount = computed(() => {
+  const count = (nodes: MenuInfo[]): number =>
+    nodes.reduce((total, node) => total + 1 + count(node.children ?? []), 0);
+  return count(menuTree.value);
 });
+const selectedCount = computed(() => checkedKeys.value.filter((key) => Number(key) > 0).length);
 
-// 菜单类型图标映射
-const getMenuTypeIcon = (type: number) => {
-  const iconMap: Record<number, { icon: string; color: string; text: string }> = {
-    [MenuType.CATALOG]: { icon: '📁', color: '#1890ff', text: '目录' },
-    [MenuType.MENU]: { icon: '📄', color: '#52c41a', text: '菜单' },
-    [MenuType.BUTTON]: { icon: '🔘', color: '#faad14', text: '按钮' },
-  };
-  return iconMap[type] || { icon: '📋', color: '#666', text: '未知' };
-};
-
-// 构建菜单树（包含按钮，使用自定义标题）
-const buildMenuTree = (menus: MenuInfo[]): any[] => {
-  return menus.map((menu) => {
-    const typeInfo = getMenuTypeIcon(menu.type);
-
-    const node: any = {
-      key: menu.id,
-      // 使用 slots 来自定义标题
-      title: menu.title,
-      // 添加自定义属性用于渲染
-      menuType: menu.type,
-      typeIcon: typeInfo.icon,
-      typeColor: typeInfo.color,
-      typeText: typeInfo.text,
-    };
-
-    // 如果有子菜单或子按钮，递归构建
-    if (menu.children && menu.children.length > 0) {
-      node.children = buildMenuTree(menu.children);
-    }
-
-    return node;
-  });
-};
-
-// 获取所有菜单ID（包括按钮和父节点）
-const getAllMenuIds = (menus: MenuInfo[]): number[] => {
-  const ids: number[] = [];
-  const traverse = (items: MenuInfo[]) => {
-    items.forEach((item) => {
-      ids.push(item.id!);
-      if (item.children && item.children.length > 0) {
-        traverse(item.children);
-      }
-    });
-  };
-  traverse(menus);
-  return ids;
-};
-
-// 获取叶子节点ID（包括按钮）
-const getLeafMenuIds = (menus: MenuInfo[], selectedIds: number[]): number[] => {
-  const leafIds: number[] = [];
-  const traverse = (items: MenuInfo[]) => {
-    items.forEach((item) => {
-      if (selectedIds.includes(item.id!)) {
-        // 如果是叶子节点（没有子节点）或者是按钮类型，则添加到选中列表
-        if (!item.children || item.children.length === 0) {
-          leafIds.push(item.id!);
-        } else {
-          // 如果有子节点，继续遍历
-          traverse(item.children);
-        }
-      }
-    });
-  };
-  traverse(menus);
-  return leafIds;
-};
-
-// 加载菜单列表
-const loadMenuList = async () => {
-  try {
-    const data = await getMenuListApi();
-    allMenuData.value = data;
-    menuTreeData.value = buildMenuTree(data);
-
-    // 如果是编辑模式，设置已选中的菜单
-    if (props.mode === 'edit' && props.roleData?.menu_ids) {
-      checkedKeys.value = getLeafMenuIds(data, props.roleData.menu_ids);
-    }
-  } catch (error) {
-    message.error('加载菜单列表失败');
-  }
-};
-
-// 表单规则
-const rules = {
+const rules: FormProps['rules'] = {
   name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   code: [
     { required: true, message: '请输入角色编码', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_]+$/, message: '角色编码只能包含字母、数字和下划线', trigger: 'blur' },
+    {
+      pattern: /^[A-Za-z0-9_]+$/,
+      message: '角色编码只能包含字母、数字和下划线',
+      trigger: 'blur',
+    },
   ],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 };
 
-// 监听弹窗显示
+const loadMenuTree = async () => {
+  treeLoading.value = true;
+  try {
+    menuTree.value = await getMenuListApi();
+  } catch {
+    message.error('加载菜单权限树失败');
+  } finally {
+    treeLoading.value = false;
+  }
+};
+
 watch(
   () => props.visible,
-  async (val) => {
-    if (val) {
-      await loadMenuList();
-      if (props.roleData) {
-        formData.value = { ...props.roleData };
-      } else {
-        formData.value = {
-          name: '',
-          code: '',
-          description: '',
-          sort: 0,
-          status: RoleStatus.ENABLED,
-          menu_ids: [],
-        } as RoleInfo;
-        checkedKeys.value = [];
-      }
-    }
+  async (visible) => {
+    if (!visible) return;
+    await loadMenuTree();
+    formData.value = props.roleData ? { ...props.roleData } : createDefaultForm();
+    checkedKeys.value = [...(props.roleData?.menu_ids ?? [])];
+    halfCheckedKeys.value = [];
   },
 );
 
-// 树选择变化
-const handleTreeCheck = (checked: number[], e: any) => {
-  checkedKeys.value = checked;
-  halfCheckedKeys.value = e.halfCheckedKeys || [];
+const handleCheck = (checked: Key[] | { checked: Key[] }, info: any) => {
+  checkedKeys.value = Array.isArray(checked) ? checked : checked.checked;
+  halfCheckedKeys.value = (info?.halfCheckedKeys ?? []) as Key[];
 };
 
-// 提交表单
+const handleCheckAll = () => {
+  const collect = (nodes: MenuInfo[]): number[] =>
+    nodes.flatMap((node) => [node.id!, ...collect(node.children ?? [])]);
+  checkedKeys.value = collect(menuTree.value);
+  halfCheckedKeys.value = [];
+};
+
+const handleCheckNone = () => {
+  checkedKeys.value = [];
+  halfCheckedKeys.value = [];
+};
+
 const handleSubmit = async () => {
   try {
     await formRef.value.validate();
     loading.value = true;
-
-    // 合并选中的节点和半选中的节点
-    const allSelectedIds = [...checkedKeys.value, ...halfCheckedKeys.value];
-    const submitData = {
+    const selected = [...checkedKeys.value, ...halfCheckedKeys.value]
+      .map(Number)
+      .filter((id) => id > 0);
+    const submitData: RoleInfo = {
       ...formData.value,
-      menu_ids: allSelectedIds,
+      menu_ids: [...new Set(selected)],
     };
 
     if (props.mode === 'create') {
       await createRoleApi(submitData);
-      message.success('创建成功');
     } else {
       await updateRoleApi(formData.value.id!, submitData);
-      message.success('更新成功');
     }
-
+    message.success(props.mode === 'create' ? '创建成功' : '更新成功');
     emit('success');
     handleClose();
   } catch (error: any) {
-    if (error.errorFields) {
-      return;
-    }
-    message.error(error.message || '操作失败');
+    if (!error?.errorFields) message.error(error?.message || '操作失败');
   } finally {
     loading.value = false;
   }
 };
 
-// 关闭弹窗
 const handleClose = () => {
   formRef.value?.resetFields();
   checkedKeys.value = [];
@@ -229,91 +167,87 @@ const handleClose = () => {
 
 <template>
   <Modal
-    :title="modalTitle"
-    :open="visible"
     :confirm-loading="loading"
+    :open="visible"
+    :title="modalTitle"
     :width="900"
     @cancel="handleClose"
     @ok="handleSubmit"
   >
     <Form
       ref="formRef"
+      :label-col="{ span: 6 }"
       :model="formData"
       :rules="rules"
-      :label-col="{ span: 5 }"
-      :wrapper-col="{ span: 17 }"
-      class="mt-4"
+      :wrapper-col="{ span: 18 }"
     >
-      <FormItem label="角色名称" name="name">
-        <Input
-          v-model:value="formData.name"
-          placeholder="请输入角色名称"
-          allow-clear
-        />
-      </FormItem>
-
-      <FormItem label="角色编码" name="code">
-        <Input
-          v-model:value="formData.code"
-          placeholder="请输入角色编码（如：admin、editor）"
-          allow-clear
-          :disabled="mode === 'edit'"
-        />
-      </FormItem>
-
-      <FormItem label="角色描述" name="description">
-        <Textarea
-          v-model:value="formData.description"
-          placeholder="请输入角色描述"
-          :rows="3"
-          allow-clear
-        />
-      </FormItem>
-
-      <FormItem label="菜单权限" name="menu_ids">
-        <div class="mb-3 flex gap-3 text-sm">
-          <Tag color="blue">📁 目录</Tag>
-          <Tag color="green">📄 菜单</Tag>
-          <Tag color="orange">🔘 按钮权限</Tag>
-        </div>
-        <div class="border border-gray-200 rounded p-3 max-h-96 overflow-auto">
-          <Tree
-            v-model:checkedKeys="checkedKeys"
-            checkable
-            :tree-data="menuTreeData"
-            :field-names="{ title: 'title', key: 'key', children: 'children' }"
-            :default-expand-all="true"
-            @check="handleTreeCheck"
-          >
-            <template #title="{ title, menuType, typeIcon }">
-              <span>
-                <span class="mr-1">{{ typeIcon }}</span>
-                <span>{{ title }}</span>
-              </span>
+      <Row :gutter="24">
+        <Col :span="12">
+          <FormItem label="角色名称" name="name">
+            <Input v-model:value="formData.name" allow-clear placeholder="请输入角色名称" />
+          </FormItem>
+        </Col>
+        <Col :span="12">
+          <FormItem label="角色编码" name="code">
+            <Input
+              v-model:value="formData.code"
+              allow-clear
+              :disabled="mode === 'edit'"
+              placeholder="请输入角色编码"
+            />
+          </FormItem>
+        </Col>
+        <Col :span="12">
+          <FormItem label="排序" name="sort">
+            <InputNumber v-model:value="formData.sort" class="w-full" :min="0" />
+          </FormItem>
+        </Col>
+        <Col :span="12">
+          <FormItem label="状态" name="status">
+            <RadioGroup v-model:value="formData.status" :options="statusOptions" />
+          </FormItem>
+        </Col>
+        <Col :span="24">
+          <FormItem label="角色描述" name="description" :label-col="{ span: 3 }" :wrapper-col="{ span: 21 }">
+            <Textarea v-model:value="formData.description" allow-clear :rows="2" placeholder="请输入角色描述" />
+          </FormItem>
+        </Col>
+        <Col :span="24">
+          <FormItem label="授权节点" name="menu_ids" :label-col="{ span: 3 }" :wrapper-col="{ span: 21 }">
+            <template v-if="isSuperRole">
+              <Tag color="blue">超级管理员角色自动拥有全部菜单和按钮权限</Tag>
             </template>
-          </Tree>
-        </div>
-      </FormItem>
-
-      <FormItem label="排序" name="sort">
-        <InputNumber
-          v-model:value="formData.sort"
-          :min="0"
-          placeholder="请输入排序"
-          class="w-full"
-        />
-      </FormItem>
-
-      <FormItem label="状态" name="status">
-        <RadioGroup v-model:value="formData.status" :options="statusOptions" />
-      </FormItem>
+            <template v-else>
+              <div class="mb-2 flex items-center gap-3 text-sm">
+                <span class="text-gray-500">已选 {{ selectedCount }} / {{ allNodeCount }}</span>
+                <a @click="handleCheckAll">全选</a>
+                <a @click="handleCheckNone">清空</a>
+              </div>
+              <Spin :spinning="treeLoading">
+                <div class="max-h-96 overflow-auto rounded border border-gray-200 p-3">
+                  <Tree
+                    checkable
+                    :checked-keys="checkedKeys"
+                    :default-expand-all="true"
+                    :tree-data="treeData"
+                    @check="handleCheck"
+                  >
+                    <template #title="node">
+                      <span class="inline-flex items-center gap-2">
+                        <span>{{ node.title }}</span>
+                        <Tag v-if="node.menuType === 3" color="orange">按钮</Tag>
+                        <span v-if="node.authority?.length" class="text-xs text-gray-400">
+                          {{ node.authority.join(', ') }}
+                        </span>
+                      </span>
+                    </template>
+                  </Tree>
+                </div>
+              </Spin>
+            </template>
+          </FormItem>
+        </Col>
+      </Row>
     </Form>
   </Modal>
 </template>
-
-<style scoped>
-:deep(.ant-tree-title) {
-  display: inline-flex;
-  align-items: center;
-}
-</style>
