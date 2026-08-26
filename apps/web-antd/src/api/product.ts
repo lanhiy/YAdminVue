@@ -62,6 +62,20 @@ export interface ProductListResult {
   page_size: number;
 }
 
+/** PDF 模板类型；两种校准证书读取同一份校准证书数据。 */
+export type ProductPdfType =
+  | 'calibration-cert-logo'
+  | 'calibration-cert-no-logo'
+  | 'test-report'
+  | 'verification-cert';
+
+export interface ProductPdfData {
+  document: Record<string, unknown>;
+  document_name: string;
+  document_type: ProductPdfType;
+  product: ProductInfo;
+}
+
 /**
  * 获取产品列表（分页）
  */
@@ -97,6 +111,17 @@ export async function createProductApi(data: ProductInfo) {
  */
 export async function copyProductApi(id: number) {
   return requestClient.post<ProductInfo>(`/system/business/product/copy/${id}`);
+}
+
+/** 获取指定 PDF 模板所需的产品及单据数据（暂不生成文件） */
+export async function getProductPdfDataApi(
+  id: number,
+  type: ProductPdfType,
+) {
+  return requestClient.post<ProductPdfData>(
+    `/system/business/product/pdf-data/${id}`,
+    { type },
+  );
 }
 
 /**

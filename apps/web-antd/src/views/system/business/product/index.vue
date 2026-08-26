@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumnsType } from 'ant-design-vue';
 
-import type { ProductInfo } from '#/api';
+import type { ProductInfo, ProductPdfType } from '#/api';
 
 import { h, onMounted, ref } from 'vue';
 
@@ -26,6 +26,7 @@ import {
 import {
   copyProductApi,
   deleteProductApi,
+  getProductPdfDataApi,
   getProductListApi,
 } from '#/api';
 
@@ -34,7 +35,7 @@ import ProductForm from './components/product-form.vue';
 import TestReportForm from './components/test-report-form.vue';
 import VerificationCertForm from './components/verification-cert-form.vue';
 
-const { hasAccessByCodes } = useAccess();
+const { hasAccessByCodes, hasAccessByRoles } = useAccess();
 
 const loading = ref(false);
 const productList = ref<ProductInfo[]>([]);
@@ -52,6 +53,13 @@ const verificationCertVisible = ref(false);
 const calibrationCertVisible = ref(false);
 /** 当前操作的产品，三张子表弹窗共用 */
 const docProduct = ref<null | ProductInfo>(null);
+
+const pdfTypeLabels: Record<ProductPdfType, string> = {
+  'calibration-cert-logo': '校准证书（带LOGO）',
+  'calibration-cert-no-logo': '校准证书（无LOGO）',
+  'test-report': '测试报告',
+  'verification-cert': '检定证书',
+};
 
 const searchForm = ref({
   instrument_name: '',
@@ -135,6 +143,52 @@ const buildDocMenu = (record: ProductInfo) => {
               default: () =>
                 h('div', { class: 'flex items-center justify-between gap-4' }, [
                   h('span', item.label),
+                  h(Badge, {
+                    status: item.recorded ? 'success' : 'default',
+                    text: item.recorded ? '已录入' : '未录入',
+                  }),
+                ]),
+            },
+          ),
+        ),
+    },
+  );
+};
+
+/** PDF 生成模板选择。两种校准证书只在模板上区分，读取同一份单据数据。 */
+const buildPdfMenu = (record: ProductInfo) => {
+  const items: { key: ProductPdfType; recorded: boolean }[] = [
+    { key: 'test-report', recorded: Boolean(record.has_test_report) },
+    {
+      key: 'verification-cert',
+      recorded: Boolean(record.has_verification_cert),
+    },
+    {
+      key: 'calibration-cert-logo',
+      recorded: Boolean(record.has_calibration_cert),
+    },
+    {
+      key: 'calibration-cert-no-logo',
+      recorded: Boolean(record.has_calibration_cert),
+    },
+  ];
+
+  return h(
+    Menu,
+    {},
+    {
+      default: () =>
+        items.map((item) =>
+          h(
+            MenuItem,
+            {
+              key: item.key,
+              onClick: () => handleGeneratePdf(record, item.key),
+            },
+            {
+              default: () =>
+                h('div', { class: 'flex items-center justify-between gap-4' }, [
+                  h('span', pdfTypeLabels[item.key]),
                   h(Badge, {
                     status: item.recorded ? 'success' : 'default',
                     text: item.recorded ? '已录入' : '未录入',
@@ -245,7 +299,7 @@ const columns: TableColumnsType = [
   {
     title: '操作',
     key: 'action',
-    width: 280,
+    width: 380,
     fixed: 'right',
     customRender: ({ record }: { record: ProductInfo }) => {
       const actions = [];
@@ -278,6 +332,31 @@ const columns: TableColumnsType = [
         );
       }
 
+      if (
+        hasAccessByCodes(['system:product:generatePdf']) ||
+        hasAccessByRoles(['superadmin'])
+      ) {
+        actions.push(
+          h(
+            Dropdown,
+            { trigger: ['click'] },
+            {
+              default: () =>
+                h(
+                  Button,
+                  { type: 'link', size: 'small' },
+                  {
+                    default: () => '生成PDF',
+                    icon: () =>
+                      h(Icon, { icon: 'mdi:file-pdf-box', width: 16 }),
+                  },
+                ),
+              overlay: () => buildPdfMenu(record),
+            },
+          ),
+        );
+      }
+
       if (hasAccessByCodes(['system:product:edit'])) {
         actions.push(
           h(
@@ -295,7 +374,11 @@ const columns: TableColumnsType = [
         );
       }
 
-      if (hasAccessByCodes(['system:product:copy'])) {
+      // 超级管理员在后端是内置全权限；角色判断可避免浏览器仍持有旧权限码时隐藏该操作。
+      if (
+        hasAccessByCodes(['system:product:copy']) ||
+        hasAccessByRoles(['superadmin'])
+      ) {
         actions.push(
           h(
             Button,
@@ -417,6 +500,15 @@ const handleCopy = (record: ProductInfo) => {
   });
 };
 
+const handleGeneratePdf = async (record: ProductInfo, type: ProductPdfType) => {
+  try {
+    await getProductPdfDataApi(record.id!, type);
+    message.success(`${pdfTypeLabels[type]}数据已获取，PDF生成功能待接入`);
+  } catch (error: any) {
+    message.error(error.message || `${pdfTypeLabels[type]}数据获取失败`);
+  }
+};
+
 const handleDelete = (record: ProductInfo) => {
   Modal.confirm({
     class: 'business-confirm-modal',
@@ -527,7 +619,7 @@ onMounted(() => {
       </Space>
     </div>
 
-    <!-- 表格：列宽合计 1360，仅在窗口确实不足时才出现横向滚动 -->
+    <!-- 表格：操作列固定在右侧，窗口不足时其余列横向滚动 -->
     <Table
       bordered
       :columns="columns"
@@ -544,7 +636,7 @@ onMounted(() => {
         onChange: handlePageChange,
       }"
       row-key="id"
-      :scroll="{ x: 1360 }"
+      :scroll="{ x: 1460 }"
       size="small"
       sticky
     />
