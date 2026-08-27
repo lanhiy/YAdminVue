@@ -127,9 +127,21 @@ export async function getProductPdfDataApi(
   );
 }
 
-/** 公开证书查询接口；后端当前完成令牌解析后返回空数组。 */
+/** 公开证书查询结果；字段值统一为字符串，缺失值为空字符串。 */
+export interface CertificateResult {
+  certificate_no: string;
+  unit_name: string;
+  instrument_name: string;
+  model: string;
+  instrument_no: string;
+  manufacturer: string;
+  check_date: string;
+  valid_until: string;
+  check_unit: string;
+}
+
 export async function getCertificateResultApi(token: string) {
-  return requestClient.get<unknown[]>(
+  return requestClient.get<CertificateResult>(
     `/certificate/${encodeURIComponent(token)}`,
   );
 }
