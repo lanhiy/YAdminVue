@@ -501,8 +501,20 @@ const handleCopy = (record: ProductInfo) => {
 };
 
 const handleGeneratePdf = async (record: ProductInfo, type: ProductPdfType) => {
+  const certificateId =
+    type === 'test-report'
+      ? record.test_report_id
+      : type === 'verification-cert'
+        ? record.verification_cert_id
+        : record.calibration_cert_id;
+
+  if (!certificateId) {
+    message.warning(`请先录入${pdfTypeLabels[type]}`);
+    return;
+  }
+
   try {
-    await getProductPdfDataApi(record.id!, type);
+    await getProductPdfDataApi(certificateId, type);
     message.success(`${pdfTypeLabels[type]}数据已获取，PDF生成功能待接入`);
   } catch (error: any) {
     message.error(error.message || `${pdfTypeLabels[type]}数据获取失败`);

@@ -70,10 +70,13 @@ export type ProductPdfType =
   | 'verification-cert';
 
 export interface ProductPdfData {
+  certificate_id: number;
   document: Record<string, unknown>;
   document_name: string;
   document_type: ProductPdfType;
+  public_token: string;
   product: ProductInfo;
+  url: string;
 }
 
 /**
@@ -115,12 +118,19 @@ export async function copyProductApi(id: number) {
 
 /** 获取指定 PDF 模板所需的产品及单据数据（暂不生成文件） */
 export async function getProductPdfDataApi(
-  id: number,
+  certificateId: number,
   type: ProductPdfType,
 ) {
   return requestClient.post<ProductPdfData>(
-    `/system/business/product/pdf-data/${id}`,
+    `/system/business/product/pdf-data/${certificateId}`,
     { type },
+  );
+}
+
+/** 公开证书查询接口；后端当前完成令牌解析后返回空数组。 */
+export async function getCertificateResultApi(token: string) {
+  return requestClient.get<unknown[]>(
+    `/certificate/${encodeURIComponent(token)}`,
   );
 }
 
