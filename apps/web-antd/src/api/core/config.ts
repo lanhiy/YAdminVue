@@ -7,6 +7,7 @@ import { requestClient } from '#/api/request';
 export interface SystemConfigInfo {
   // 应用配置
   app_name: string;
+  app_host: string;
   app_default_home_path: string;
   app_access_mode: 'backend' | 'frontend';
   app_login_expired_mode: 'modal' | 'page';
@@ -70,7 +71,6 @@ export interface SystemConfigInfo {
   // 页脚配置
   footer_enable: boolean;
   footer_height: number;
-
 }
 
 /**

@@ -35,6 +35,7 @@ const formRef = ref();
 const formData = reactive<SystemConfigInfo>({
   // 应用配置
   app_name: '',
+  app_host: '',
   app_default_home_path: '',
   app_access_mode: 'frontend',
   app_login_expired_mode: 'modal',
@@ -170,6 +171,20 @@ onMounted(() => {
                 placeholder="例如: /dashboard"
               />
               <template #extra>用户登录后默认跳转的页面路径</template>
+            </FormItem>
+
+            <FormItem
+              label="证书公开地址 Host"
+              name="app_host"
+              :rules="[
+                { required: true, message: '请输入证书公开查询地址 Host' },
+              ]"
+            >
+              <Input
+                v-model:value="formData.app_host"
+                placeholder="例如: https://example.com"
+              />
+              <template #extra>证书公开查询链接将使用此 Host</template>
             </FormItem>
 
             <FormItem label="访问模式" name="app_access_mode">
@@ -703,7 +718,6 @@ onMounted(() => {
             </FormItem>
           </Form>
         </TabPane>
-
       </Tabs>
     </Card>
   </Page>
