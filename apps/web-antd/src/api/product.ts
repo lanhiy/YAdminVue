@@ -64,8 +64,8 @@ export interface ProductListResult {
 
 /** PDF 模板类型；两种校准证书读取同一份校准证书数据。 */
 export type ProductPdfType =
-  | 'calibration-cert-logo'
-  | 'calibration-cert-no-logo'
+  | 'calibration-cert-cnas'
+  | 'calibration-cert-no-cnas'
   | 'test-report'
   | 'verification-cert';
 

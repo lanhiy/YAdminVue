@@ -55,8 +55,8 @@ const calibrationCertVisible = ref(false);
 const docProduct = ref<null | ProductInfo>(null);
 
 const pdfTypeLabels: Record<ProductPdfType, string> = {
-  'calibration-cert-logo': '校准证书（带LOGO）',
-  'calibration-cert-no-logo': '校准证书（无LOGO）',
+  'calibration-cert-cnas': '校准证书（带CNAS）',
+  'calibration-cert-no-cnas': '校准证书（不带CNAS）',
   'test-report': '测试报告',
   'verification-cert': '检定证书',
 };
@@ -164,11 +164,11 @@ const buildPdfMenu = (record: ProductInfo) => {
       recorded: Boolean(record.has_verification_cert),
     },
     {
-      key: 'calibration-cert-logo',
+      key: 'calibration-cert-cnas',
       recorded: Boolean(record.has_calibration_cert),
     },
     {
-      key: 'calibration-cert-no-logo',
+      key: 'calibration-cert-no-cnas',
       recorded: Boolean(record.has_calibration_cert),
     },
   ];
