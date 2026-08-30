@@ -755,7 +755,7 @@ const overlayStyle = (item: OverlayAttr) => ({
       <div class="flex flex-col items-stretch gap-3 xl:flex-row xl:items-start">
         <div ref="stageWrapRef" class="min-w-0 flex-1 rounded bg-[#d9d9d9] p-2">
           <div
-            class="relative mx-auto"
+            class="pdf-print-clip relative mx-auto"
             :style="{
               width: `${CANVAS_WIDTH * scale}px`,
               height: `${CANVAS_HEIGHT * scale}px`,
@@ -975,8 +975,11 @@ const overlayStyle = (item: OverlayAttr) => ({
 @media print {
   html,
   body {
+    width: 210mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: hidden !important;
     background: #fff !important;
   }
 
@@ -984,18 +987,29 @@ const overlayStyle = (item: OverlayAttr) => ({
     visibility: hidden !important;
   }
 
-  .pdf-print-area,
-  .pdf-print-area * {
+  .pdf-print-clip,
+  .pdf-print-clip * {
     visibility: visible !important;
   }
 
-  .pdf-print-area {
+  .pdf-print-clip {
     position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .pdf-print-area {
+    position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 2479px !important;
     height: 3508px !important;
-    transform: scale(0.32016) !important;
+    transform: scale(0.319) !important;
     transform-origin: top left !important;
     box-shadow: none !important;
     background: #fff !important;
