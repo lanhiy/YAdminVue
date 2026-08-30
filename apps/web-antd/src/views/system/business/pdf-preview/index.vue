@@ -33,8 +33,8 @@ import { createPdfTemplates } from './templates';
 
 defineOptions({ name: 'SystemBusinessPdfPreview' });
 
-/** 开发时改为 true，显示宽高位置字号等调试属性 */
-const SHOW_ATTR_DEBUG = false;
+/** 开发时改为 true，显示宽高位置字号等调试属性，左侧预览按容器宽度铺满 */
+const SHOW_ATTR_DEBUG = true;
 
 const CANVAS_WIDTH = 2479;
 const CANVAS_HEIGHT = 3508;
@@ -141,6 +141,9 @@ const { height: viewportHeight } = useWindowSize();
 
 const scale = computed(() => {
   const available = Math.max(wrapWidth.value - 16, 120);
+  if (SHOW_ATTR_DEBUG) {
+    return Math.min(1, available / CANVAS_WIDTH);
+  }
   const availableHeight = Math.max(viewportHeight.value - 220, 240);
   return Math.min(1, available / CANVAS_WIDTH, availableHeight / CANVAS_HEIGHT);
 });
@@ -381,53 +384,8 @@ const renderCertificateImage = async () => {
   return canvas.toDataURL('image/jpeg', 0.95);
 };
 
-const waitForImage = (image: HTMLImageElement) =>
-  image.complete
-    ? Promise.resolve()
-    : new Promise<void>((resolve) => {
-        image.addEventListener('load', () => resolve(), { once: true });
-      });
-
-const handlePrint = async () => {
-  const printWindow = window.open('', '_blank', 'width=900,height=1200');
-  if (!printWindow) {
-    message.warning('无法打开打印窗口，请允许浏览器弹窗');
-    return;
-  }
-
-  try {
-    generating.value = true;
-    const imageUrl = await renderCertificateImage();
-    printWindow.document.write(`
-      <!doctype html>
-      <html lang="zh-CN">
-        <head>
-          <meta charset="UTF-8" />
-          <title>${current.value.title} - 第1页</title>
-          <style>
-            @page { size: A4 portrait; margin: 0; }
-            html, body { margin: 0; padding: 0; background: #fff; }
-            img { display: block; width: 210mm; height: 297mm; }
-          </style>
-        </head>
-        <body><img id="certificate" alt="${current.value.title}" /></body>
-      </html>
-    `);
-    printWindow.document.close();
-    const image =
-      printWindow.document.querySelector<HTMLImageElement>('#certificate');
-    if (!image) throw new Error('打印页面初始化失败');
-    image.src = imageUrl;
-    await waitForImage(image);
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  } catch (error: any) {
-    printWindow.close();
-    message.error(error.message || '证书打印失败');
-  } finally {
-    generating.value = false;
-  }
+const handlePrint = () => {
+  window.print();
 };
 
 const dataUrlToBytes = (dataUrl: string) => {
@@ -775,7 +733,7 @@ const overlayStyle = (item: OverlayAttr) => ({
       <div class="flex flex-wrap gap-2">
         <Button
           class="!border-[#1677ff] !bg-[#1677ff] !text-white hover:!border-[#4096ff] hover:!bg-[#4096ff]"
-          :loading="generating || loadingCertificate"
+          :loading="loadingCertificate"
           @click="handlePrint"
         >
           打印

@@ -76,48 +76,109 @@ const jzAttr = (): Record<string, OverlayAttr> => ({
   批准: imgBox(595, 170, 1972, 1440),
   核验: imgBox(595, 170, 2154, 1440),
   校准: imgBox(595, 170, 2338, 1440),
-  接收日期年: box(180, 88, 2563, 673, {
+  接收日期年: box(180, 88, 2561, 673, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  接收日期月: box(130, 88, 2563, 1008, {
+  接收日期月: box(130, 88, 2561, 1008, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  接收日期日: box(130, 88, 2563, 1321, {
+  接收日期日: box(130, 88, 2561, 1321, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  校准日期年: box(180, 88, 2682, 673, {
+  校准日期年: box(180, 88, 2676, 673, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  校准日期月: box(130, 88, 2682, 1008, {
+  校准日期月: box(130, 88, 2676, 1008, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  校准日期日: box(130, 88, 2682, 1321, {
+  校准日期日: box(130, 88, 2676, 1321, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  签发日期年: box(180, 88, 2800, 673, {
+  签发日期年: box(180, 88, 2794, 673, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  签发日期月: box(130, 88, 2800, 1008, {
+  签发日期月: box(130, 88, 2794, 1008, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
-  签发日期日: box(130, 88, 2800, 1321, {
+  签发日期日: box(130, 88, 2794, 1321, {
     fontFamily: FONT_NUM,
     fontSize: 50,
   }),
   二维码: imgBox(196, 196, 2680, 1919),
-  当前页: box(90, 44, 3261, 1921, {
+  当前页: box(90, 44, 3261, 1918, {
     fontFamily: FONT_NUM,
     fontSize: 40,
   }),
-  总页: box(90, 44, 3261, 2103, {
+  总页: box(90, 44, 3261, 2092, {
+    fontFamily: FONT_NUM,
+    fontSize: 40,
+  }),
+});
+
+const jzPlainAttr = (): Record<string, OverlayAttr> => ({
+  证书编号: box(532, 100, 899, 1163, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  委托方: box(1220, 120, 1135, 816, { fontSize: 50 }),
+  地址: box(1220, 120, 1280, 816, { fontSize: 50 }),
+  样品名称: box(1220, 120, 1428, 816, { fontSize: 50 }),
+  制造厂商: box(1220, 120, 1576, 816, { fontSize: 50 }),
+  型号规格: box(1220, 120, 1722, 816, { fontSize: 50 }),
+  器具编号: box(1220, 120, 1870, 816, { fontSize: 50 }),
+  批准: imgBox(595, 170, 2012, 1440),
+  核验: imgBox(595, 170, 2192, 1440),
+  校准: imgBox(595, 170, 2375, 1440),
+  接收日期年: box(180, 88, 2602, 673, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  接收日期月: box(130, 88, 2602, 1008, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  接收日期日: box(130, 88, 2602, 1321, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  校准日期年: box(180, 88, 2720, 673, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  校准日期月: box(130, 88, 2720, 1008, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  校准日期日: box(130, 88, 2720, 1321, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  签发日期年: box(180, 88, 2840, 673, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  签发日期月: box(130, 88, 2840, 1008, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  签发日期日: box(130, 88, 2840, 1321, {
+    fontFamily: FONT_NUM,
+    fontSize: 50,
+  }),
+  二维码: imgBox(196, 196, 2726, 1919),
+  当前页: box(90, 44, 3225, 1921, {
+    fontFamily: FONT_NUM,
+    fontSize: 40,
+  }),
+  总页: box(90, 44, 3225, 2103, {
     fontFamily: FONT_NUM,
     fontSize: 40,
   }),
@@ -142,26 +203,26 @@ export function createPdfTemplates(): PdfTemplate[] {
         批准: imgBox(595, 170, 2033, 1440),
         核验: imgBox(595, 170, 2212, 1440),
         测试: imgBox(595, 170, 2391, 1440),
-        测试日期年: box(180, 88, 2734, 839, {
+        测试日期年: box(180, 88, 2725, 839, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        测试日期月: box(130, 88, 2734, 1174, {
+        测试日期月: box(130, 88, 2725, 1174, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        测试日期日: box(130, 88, 2734, 1488, {
+        测试日期日: box(130, 88, 2725, 1488, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
         二维码: imgBox(196, 196, 2720, 1940),
-        当前页: box(90, 44, 3230, 1922, {
+        当前页: box(90, 44, 3228, 1922, {
           fontFamily: FONT_NUM,
-          fontSize: 34,
+          fontSize: 40,
         }),
-        总页: box(90, 44, 3230, 2103, {
+        总页: box(90, 44, 3228, 2103, {
           fontFamily: FONT_NUM,
-          fontSize: 34,
+          fontSize: 40,
         }),
       },
     },
@@ -184,36 +245,36 @@ export function createPdfTemplates(): PdfTemplate[] {
         批准: imgBox(595, 170, 2123, 1440),
         核验: imgBox(595, 170, 2310, 1440),
         检定: imgBox(595, 170, 2490, 1440),
-        检定日期年: box(180, 88, 2708, 780, {
+        检定日期年: box(180, 88, 2706, 780, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        检定日期月: box(130, 88, 2708, 1136, {
+        检定日期月: box(130, 88, 2706, 1136, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        检定日期日: box(130, 88, 2708, 1448, {
+        检定日期日: box(130, 88, 2706, 1448, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        有效期至年: box(180, 88, 2818, 780, {
+        有效期至年: box(180, 88, 2808, 780, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        有效期至月: box(130, 88, 2818, 1136, {
+        有效期至月: box(130, 88, 2808, 1136, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
-        有效期至日: box(130, 88, 2818, 1448, {
+        有效期至日: box(130, 88, 2808, 1448, {
           fontFamily: FONT_NUM,
           fontSize: 50,
         }),
         二维码: imgBox(196, 196, 2706, 1920),
-        当前页: box(90, 44, 3230, 1921, {
+        当前页: box(90, 44, 3228, 1921, {
           fontFamily: FONT_NUM,
           fontSize: 40,
         }),
-        总页: box(90, 44, 3230, 2103, {
+        总页: box(90, 44, 3228, 2103, {
           fontFamily: FONT_NUM,
           fontSize: 40,
         }),
@@ -229,7 +290,7 @@ export function createPdfTemplates(): PdfTemplate[] {
       key: 'jz',
       title: '校准证书',
       img: jzImg,
-      attr: jzAttr(),
+      attr: jzPlainAttr(),
     },
   ];
 }
