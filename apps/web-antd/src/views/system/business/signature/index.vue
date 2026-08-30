@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumnsType } from 'ant-design-vue';
 
-import type { SignatureInfo } from '#/api';
+import type { SignatureInfo, SignatureListItem } from '#/api';
 
 import { h, onMounted, ref } from 'vue';
 
@@ -9,16 +9,28 @@ import { useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
 import { Icon } from '@iconify/vue';
-import { Button, Input, message, Modal, Space, Table } from 'ant-design-vue';
+import {
+  Button,
+  Input,
+  message,
+  Modal,
+  Space,
+  Spin,
+  Table,
+} from 'ant-design-vue';
 
-import { deleteSignatureApi, getSignatureListApi } from '#/api';
+import {
+  deleteSignatureApi,
+  getSignatureDetailApi,
+  getSignatureListApi,
+} from '#/api';
 
 import SignatureForm from './components/signature-form.vue';
 
 const { hasAccessByCodes } = useAccess();
 
 const loading = ref(false);
-const signatureList = ref<SignatureInfo[]>([]);
+const signatureList = ref<SignatureListItem[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(20);
@@ -27,6 +39,7 @@ const formMode = ref<'create' | 'edit'>('create');
 const currentSignature = ref<null | SignatureInfo>(null);
 const previewModalVisible = ref(false);
 const previewSignature = ref<null | SignatureInfo>(null);
+const previewLoading = ref(false);
 
 const searchForm = ref({
   name: '',
@@ -53,14 +66,14 @@ const columns: TableColumnsType = [
     dataIndex: 'remark',
     width: 200,
     ellipsis: true,
-    customRender: ({ record }: { record: SignatureInfo }) =>
+    customRender: ({ record }: { record: SignatureListItem }) =>
       record.remark || '-',
   },
   {
     title: '创建人',
     dataIndex: 'created_by_name',
     width: 120,
-    customRender: ({ record }: { record: SignatureInfo }) =>
+    customRender: ({ record }: { record: SignatureListItem }) =>
       record.created_by_name || '-',
   },
   {
@@ -73,7 +86,7 @@ const columns: TableColumnsType = [
     key: 'action',
     width: 250,
     fixed: 'right',
-    customRender: ({ record }: { record: SignatureInfo }) => {
+    customRender: ({ record }: { record: SignatureListItem }) => {
       const actions = [];
 
       actions.push(
@@ -166,18 +179,32 @@ const handleAdd = () => {
   formModalVisible.value = true;
 };
 
-const handleEdit = (record: SignatureInfo) => {
-  formMode.value = 'edit';
-  currentSignature.value = { ...record };
-  formModalVisible.value = true;
+const handleEdit = async (record: SignatureListItem) => {
+  try {
+    currentSignature.value = await getSignatureDetailApi(record.id!);
+    formMode.value = 'edit';
+    formModalVisible.value = true;
+  } catch (error: any) {
+    message.error(error.message || '加载签名详情失败');
+  }
 };
 
-const handlePreview = (record: SignatureInfo) => {
-  previewSignature.value = record;
+const handlePreview = async (record: SignatureListItem) => {
+  previewSignature.value = { ...record, image_base64: '' };
   previewModalVisible.value = true;
+
+  try {
+    previewLoading.value = true;
+    previewSignature.value = await getSignatureDetailApi(record.id!);
+  } catch (error: any) {
+    previewModalVisible.value = false;
+    message.error(error.message || '加载签名图片失败');
+  } finally {
+    previewLoading.value = false;
+  }
 };
 
-const handleDelete = (record: SignatureInfo) => {
+const handleDelete = (record: SignatureListItem) => {
   Modal.confirm({
     class: 'business-confirm-modal',
     title: '确认删除',
@@ -295,17 +322,19 @@ onMounted(() => {
       "
       :width="560"
     >
-      <div
-        class="signature-preview-surface flex min-h-56 items-center justify-center overflow-hidden rounded border border-gray-200 p-4"
-      >
-        <img
-          v-if="previewSignature?.image_base64"
-          :src="previewSignature.image_base64"
-          :alt="previewSignature.name"
-          class="max-h-64 max-w-full object-contain"
-        />
-        <span v-else class="text-sm text-gray-400">暂无签名图片</span>
-      </div>
+      <Spin :spinning="previewLoading">
+        <div
+          class="signature-preview-surface flex min-h-56 items-center justify-center overflow-hidden rounded border border-gray-200 p-4"
+        >
+          <img
+            v-if="previewSignature?.image_base64"
+            :src="previewSignature.image_base64"
+            :alt="previewSignature.name"
+            class="max-h-64 max-w-full object-contain"
+          />
+          <span v-else class="text-sm text-gray-400">暂无签名图片</span>
+        </div>
+      </Spin>
     </Modal>
   </Page>
 </template>

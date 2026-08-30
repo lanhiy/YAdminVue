@@ -20,6 +20,11 @@ export interface SignatureInfo {
 }
 
 /**
+ * 签名列表项（列表接口不返回体积较大的图片 Base64）
+ */
+export type SignatureListItem = Omit<SignatureInfo, 'image_base64'>;
+
+/**
  * 签名选择器用的精简选项
  */
 export interface SignatureOption {
@@ -41,7 +46,7 @@ export interface SignatureListParams {
  * 签名列表返回结果
  */
 export interface SignatureListResult {
-  list: SignatureInfo[];
+  list: SignatureListItem[];
   total: number;
   page: number;
   page_size: number;
