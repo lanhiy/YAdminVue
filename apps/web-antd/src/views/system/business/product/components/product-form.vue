@@ -133,6 +133,7 @@ const handleClose = () => {
             <Input
               v-model:value="formData.instrument_no"
               allow-clear
+              :maxlength="100"
               placeholder="请输入器具编号，需唯一"
             />
           </FormItem>

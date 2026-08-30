@@ -131,6 +131,7 @@ const handleClose = () => {
           <Input
             v-model:value="formData.report_no"
             allow-clear
+            :maxlength="100"
             placeholder="请输入报告编号"
           />
         </FormItem>

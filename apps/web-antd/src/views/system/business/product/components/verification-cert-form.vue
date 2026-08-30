@@ -140,6 +140,7 @@ const handleClose = () => {
           <Input
             v-model:value="formData.cert_no"
             allow-clear
+            :maxlength="100"
             placeholder="请输入证书编号"
           />
         </FormItem>
