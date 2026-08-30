@@ -280,7 +280,7 @@ const loadCertificateData = async () => {
   selectedKey.value = PDF_TEMPLATE_BY_TYPE[type][0]!;
   const certificateId = Number(route.query.certificateId);
   if (!Number.isInteger(certificateId) || certificateId <= 0) {
-    message.warning('缺少有效的证书参数，请从产品页的生成PDF进入');
+    message.warning('缺少有效的证书参数，请从产品页的PDF进入');
     return;
   }
 

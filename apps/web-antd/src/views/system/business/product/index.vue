@@ -89,7 +89,7 @@ const handleOpenDoc = (
 };
 
 /**
- * 三张子表合并到一个「报告/证书」按钮里，点开后单选进入对应表单。
+ * 三张子表合并到一个「录入」按钮里，点开后单选进入对应表单。
  * 每项后面带状态点：绿色=已录入，灰色=未录入。
  */
 const buildDocMenu = (record: ProductInfo) => {
@@ -315,7 +315,7 @@ const columns: TableColumnsType = [
                   Button,
                   { type: 'link', size: 'small' },
                   {
-                    default: () => '报告/证书',
+                    default: () => '录入',
                     icon: () =>
                       h(Icon, {
                         icon: 'mdi:file-document-multiple',
@@ -343,7 +343,7 @@ const columns: TableColumnsType = [
                   Button,
                   { type: 'link', size: 'small' },
                   {
-                    default: () => '生成PDF',
+                    default: () => 'PDF',
                     icon: () =>
                       h(Icon, { icon: 'mdi:file-pdf-box', width: 16 }),
                   },
