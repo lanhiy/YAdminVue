@@ -257,6 +257,10 @@ const applyCertificateData = async (
       setTemplateValue(template, '证书编号', documentData.cert_no);
       setTemplateValue(template, '委托方', documentData.client_name);
       setTemplateValue(template, '地址', documentData.address);
+      setTemplateValue(template, '样品名称', product.instrument_name);
+      setTemplateValue(template, '制造厂商', product.manufacturer);
+      setTemplateValue(template, '型号规格', product.model);
+      setTemplateValue(template, '器具编号', product.instrument_no);
       setTemplateValue(template, '接收日期年', receiveDate.year);
       setTemplateValue(template, '接收日期月', receiveDate.month);
       setTemplateValue(template, '接收日期日', receiveDate.day);
