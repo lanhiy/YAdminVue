@@ -1,95 +1,225 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import type { CertificateResult } from '#/api';
 
-import { Button, Form, FormItem, Input, message } from 'ant-design-vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
-const formRef = ref();
-const loading = ref(false);
+import { getCertificateResultApi } from '#/api';
 
-const formData = reactive({
-  name: '',
-  phone: '',
-  email: '',
-  remark: '',
+defineOptions({ name: 'PublicForm' });
+
+const FIELDS: { key: keyof CertificateResult; label: string }[] = [
+  { key: 'certificate_no', label: '证书编号' },
+  { key: 'unit_name', label: '单位名称' },
+  { key: 'instrument_name', label: '器具名称' },
+  { key: 'model', label: '型号规格' },
+  { key: 'instrument_no', label: '出厂编号' },
+  { key: 'manufacturer', label: '制造厂商' },
+  { key: 'check_date', label: '校检日期' },
+  { key: 'valid_until', label: '有效期' },
+  { key: 'check_unit', label: '校检单位' },
+];
+
+const SAMPLE_RESULT: CertificateResult = {
+  certificate_no: '926003809',
+  unit_name: '重庆高金实业股份有限公司',
+  instrument_name: '带表卡尺',
+  model: '(0～200)mm 0.02mm',
+  instrument_no: '4602174273',
+  manufacturer: '成量',
+  check_date: '2026-08-04',
+  valid_until: '2027-08-03',
+  check_unit: '',
+};
+
+const route = useRoute();
+const loaded = ref(false);
+const result = ref<CertificateResult | null>(null);
+
+const token = computed(() => {
+  const param = route.params.token;
+  const fromPath = Array.isArray(param) ? param[0] : param;
+  const fromQuery = route.query.token;
+  const query = Array.isArray(fromQuery) ? fromQuery[0] : fromQuery;
+  return String(fromPath || query || '').trim();
 });
 
-async function handleSubmit() {
+const hasResult = computed(() => {
+  if (!result.value) return false;
+  return FIELDS.some((field) => String(result.value?.[field.key] ?? '').trim());
+});
+
+function displayValue(key: keyof CertificateResult) {
+  return String(result.value?.[key] ?? '');
+}
+
+async function loadResult() {
+  loaded.value = false;
+  result.value = null;
+  if (!token.value) {
+    result.value = import.meta.env.DEV ? SAMPLE_RESULT : null;
+    loaded.value = true;
+    return;
+  }
   try {
-    await formRef.value?.validate();
-    loading.value = true;
-    message.success('提交成功');
+    result.value = await getCertificateResultApi(token.value);
+  } catch {
+    result.value = null;
   } finally {
-    loading.value = false;
+    loaded.value = true;
   }
 }
 
-function handleReset() {
-  formRef.value?.resetFields();
-}
+watch(token, loadResult, { immediate: true });
 </script>
 
 <template>
-  <div class="public-form-page">
-    <div class="public-form-card">
-      <h1 class="public-form-title">信息登记</h1>
-      <Form
-        ref="formRef"
-        :model="formData"
-        layout="horizontal"
-        :label-col="{ style: { width: '80px' } }"
-        :wrapper-col="{ style: { flex: 1 } }"
-      >
-        <FormItem
-          label="姓名"
-          name="name"
-          :rules="[{ required: true, message: '请输入姓名' }]"
-        >
-          <Input v-model:value="formData.name" placeholder="请输入姓名" />
-        </FormItem>
-        <FormItem
-          label="手机号"
-          name="phone"
-          :rules="[{ required: true, message: '请输入手机号' }]"
-        >
-          <Input v-model:value="formData.phone" placeholder="请输入手机号" />
-        </FormItem>
-        <FormItem label="邮箱" name="email">
-          <Input v-model:value="formData.email" placeholder="请输入邮箱" />
-        </FormItem>
-        <FormItem label="备注" name="remark">
-          <Input.TextArea
-            v-model:value="formData.remark"
-            placeholder="请输入备注"
-            :rows="3"
-          />
-        </FormItem>
-        <FormItem :wrapper-col="{ offset: 0, style: { marginLeft: '80px' } }">
-          <Button type="primary" :loading="loading" @click="handleSubmit">
-            提交
-          </Button>
-          <Button class="ml-2" @click="handleReset">重置</Button>
-        </FormItem>
-      </Form>
+  <div class="cert-query-page">
+    <div class="bt">
+      <span class="bar-wrap"><span class="bar"></span></span>
+      <span class="span1">
+        <h4>证书查询结果</h4>
+        查询结果如下：
+      </span>
+    </div>
+
+    <div v-if="loaded && hasResult" class="tab">
+      <table cellpadding="0" cellspacing="2">
+        <tbody>
+          <tr v-for="field in FIELDS" :key="field.key" class="ta">
+            <td class="td1">{{ field.label }}</td>
+            <td class="td2">{{ displayValue(field.key) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-else-if="loaded" class="tab">
+      <table cellpadding="0" cellspacing="2">
+        <tbody>
+          <tr class="ta">
+            <td class="td2 empty">未查询到符合条件的证书</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer" :class="hasResult ? 'footer-full' : 'footer-null'">
+      技术支持：南京明德软件有限公司
     </div>
   </div>
 </template>
 
 <style scoped>
-.public-form-page {
+.cert-query-page {
+  box-sizing: border-box;
   min-height: 100vh;
-  padding: 48px 24px;
+  padding: 1.2em 0 2em;
+  color-scheme: light;
   background: #fff;
+  font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
 }
 
-.public-form-card {
-  max-width: 560px;
+.bt {
+  position: relative;
+  display: flex;
+  width: 95%;
   margin: 0 auto;
 }
 
-.public-form-title {
-  margin: 0 0 32px;
-  font-size: 20px;
-  font-weight: 600;
-  color: rgb(0 0 0 / 88%);
+.bar-wrap {
+  flex-shrink: 0;
+  padding-top: 0.15em;
+}
+
+.bar {
+  display: block;
+  width: 0.5em;
+  height: 2em;
+  background: #313131;
+  border-radius: 1em;
+}
+
+.span1 {
+  position: relative;
+  top: 0.15em;
+  padding-left: 0.5em;
+  color: #5d5d5d;
+  font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+}
+
+.span1 h4 {
+  margin: 0 0 0.15em;
+  color: #000;
+  font-size: 1.17em;
+  font-weight: 700;
+}
+
+.tab {
+  position: relative;
+  width: 95%;
+  margin: 1.5em auto 0;
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+.tab table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.ta {
+  width: 100%;
+  height: 3.2em;
+  color: #fff;
+  font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+.td1,
+.td2 {
+  box-sizing: border-box;
+  border: none;
+  vertical-align: middle;
+}
+
+.td1 {
+  position: relative;
+  width: 30%;
+  padding: 0.8em;
+  background: #2e45a0;
+}
+
+.td2 {
+  position: relative;
+  width: 70%;
+  padding: 0.8em;
+  color: #474747;
+  background: #f4f4f4;
+}
+
+.td2.empty {
+  width: 100%;
+}
+
+.footer {
+  width: 100%;
+  padding: 1.5em 0 0.6em;
+  color: #333;
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.footer-full {
+  position: relative;
+}
+
+.footer-null {
+  position: fixed;
+  bottom: 10px;
+  left: 0;
 }
 </style>

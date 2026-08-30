@@ -1,16 +1,24 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+const pageMeta = {
+  title: '证书防伪查询',
+  hideInMenu: true,
+  hideInTab: true,
+  ignoreAccess: true,
+};
+
 const routes: RouteRecordRaw[] = [
   {
-    path: '/public-form',
+    path: '/public-form/:token?',
     name: 'PublicForm',
     component: () => import('#/views/public-form/index.vue'),
-    meta: {
-      title: '公开表单',
-      hideInMenu: true,
-      hideInTab: true,
-      ignoreAccess: true,
-    },
+    meta: pageMeta,
+  },
+  {
+    path: '/certificate/:token',
+    name: 'CertificateQuery',
+    component: () => import('#/views/public-form/index.vue'),
+    meta: pageMeta,
   },
 ];
 
