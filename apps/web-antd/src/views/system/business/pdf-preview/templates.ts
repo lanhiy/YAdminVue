@@ -139,7 +139,7 @@ export function createPdfTemplates(): PdfTemplate[] {
         制造厂商: box(1220, 120, 1508, 816, { fontSize: 50 }),
         型号规格: box(1220, 120, 1668, 816, { fontSize: 50 }),
         器具编号: box(1220, 120, 1824, 816, { fontSize: 50 }),
-        校准: imgBox(595, 170, 2033, 1440),
+        批准: imgBox(595, 170, 2033, 1440),
         核验: imgBox(595, 170, 2212, 1440),
         测试: imgBox(595, 170, 2391, 1440),
         测试日期年: box(180, 88, 2734, 839, {

@@ -75,10 +75,19 @@ const handleClear = () => {
     </div>
 
     <div class="flex flex-col gap-1">
-      <Button size="small" type="link" @click="handleOpen">
+      <Button
+        class="!border-[#7c3aed] !bg-[#7c3aed] !text-white hover:!border-[#8b5cf6] hover:!bg-[#8b5cf6]"
+        size="small"
+        @click="handleOpen"
+      >
         {{ value ? '更换签名' : '从签名库选择' }}
       </Button>
-      <Button v-if="value" danger size="small" type="link" @click="handleClear">
+      <Button
+        v-if="value"
+        class="!border-[#dc2626] !bg-[#dc2626] !text-white hover:!border-[#ef4444] hover:!bg-[#ef4444]"
+        size="small"
+        @click="handleClear"
+      >
         清除
       </Button>
     </div>
@@ -102,7 +111,9 @@ const handleClear = () => {
             :key="item.id"
             class="cursor-pointer rounded border p-2 transition-colors hover:border-blue-500"
             :class="
-              item.image_base64 === value ? 'border-blue-500' : 'border-gray-200'
+              item.image_base64 === value
+                ? 'border-blue-500'
+                : 'border-gray-200'
             "
             @click="handlePick(item)"
           >
@@ -131,7 +142,11 @@ const handleClear = () => {
     linear-gradient(-45deg, #eef0f2 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #eef0f2 75%),
     linear-gradient(-45deg, transparent 75%, #eef0f2 75%);
-  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-position:
+    0 0,
+    0 6px,
+    6px -6px,
+    -6px 0;
   background-size: 12px 12px;
 }
 </style>

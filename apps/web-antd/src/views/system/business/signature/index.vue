@@ -9,19 +9,9 @@ import { useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
 import { Icon } from '@iconify/vue';
-import {
-  Button,
-  Input,
-  message,
-  Modal,
-  Space,
-  Table,
-} from 'ant-design-vue';
+import { Button, Input, message, Modal, Space, Table } from 'ant-design-vue';
 
-import {
-  deleteSignatureApi,
-  getSignatureListApi,
-} from '#/api';
+import { deleteSignatureApi, getSignatureListApi } from '#/api';
 
 import SignatureForm from './components/signature-form.vue';
 
@@ -35,6 +25,8 @@ const pageSize = ref(20);
 const formModalVisible = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const currentSignature = ref<null | SignatureInfo>(null);
+const previewModalVisible = ref(false);
+const previewSignature = ref<null | SignatureInfo>(null);
 
 const searchForm = ref({
   name: '',
@@ -42,42 +34,14 @@ const searchForm = ref({
 
 const columns: TableColumnsType = [
   {
+    title: 'ID',
+    dataIndex: 'id',
+    width: 80,
+  },
+  {
     title: '签名人姓名',
     dataIndex: 'name',
     width: 160,
-  },
-  {
-    title: '签名图片',
-    dataIndex: 'image_base64',
-    width: 200,
-    customRender: ({ record }: { record: SignatureInfo }) => {
-      const url = record.image_base64;
-
-      if (!url) {
-        return '-';
-      }
-
-      return h(
-        'div',
-        {
-          class: 'flex h-16 w-40 items-center justify-center overflow-hidden rounded border border-gray-200',
-          style: {
-            backgroundColor: '#fff',
-            backgroundImage:
-              'linear-gradient(45deg, #eef0f2 25%, transparent 25%), linear-gradient(-45deg, #eef0f2 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eef0f2 75%), linear-gradient(-45deg, transparent 75%, #eef0f2 75%)',
-            backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0',
-            backgroundSize: '16px 16px',
-          },
-        },
-        [
-          h('img', {
-            src: url,
-            alt: record.name,
-            class: 'h-full w-full object-contain',
-          }),
-        ],
-      );
-    },
   },
   {
     title: '排序',
@@ -107,10 +71,26 @@ const columns: TableColumnsType = [
   {
     title: '操作',
     key: 'action',
-    width: 160,
+    width: 250,
     fixed: 'right',
     customRender: ({ record }: { record: SignatureInfo }) => {
       const actions = [];
+
+      actions.push(
+        h(
+          Button,
+          {
+            type: 'link',
+            size: 'small',
+            class: '!text-[#2563eb] hover:!text-[#1d4ed8]',
+            onClick: () => handlePreview(record),
+          },
+          {
+            default: () => '预览签名',
+            icon: () => h(Icon, { icon: 'mdi:eye-outline', width: 16 }),
+          },
+        ),
+      );
 
       if (hasAccessByCodes(['system:signature:edit'])) {
         actions.push(
@@ -190,6 +170,11 @@ const handleEdit = (record: SignatureInfo) => {
   formMode.value = 'edit';
   currentSignature.value = { ...record };
   formModalVisible.value = true;
+};
+
+const handlePreview = (record: SignatureInfo) => {
+  previewSignature.value = record;
+  previewModalVisible.value = true;
 };
 
 const handleDelete = (record: SignatureInfo) => {
@@ -301,5 +286,43 @@ onMounted(() => {
       :signature-data="currentSignature"
       @success="handleFormSuccess"
     />
+
+    <Modal
+      v-model:open="previewModalVisible"
+      :footer="null"
+      :title="
+        previewSignature ? `预览签名：${previewSignature.name}` : '预览签名'
+      "
+      :width="560"
+    >
+      <div
+        class="signature-preview-surface flex min-h-56 items-center justify-center overflow-hidden rounded border border-gray-200 p-4"
+      >
+        <img
+          v-if="previewSignature?.image_base64"
+          :src="previewSignature.image_base64"
+          :alt="previewSignature.name"
+          class="max-h-64 max-w-full object-contain"
+        />
+        <span v-else class="text-sm text-gray-400">暂无签名图片</span>
+      </div>
+    </Modal>
   </Page>
 </template>
+
+<style scoped>
+.signature-preview-surface {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #eef0f2 25%, transparent 25%),
+    linear-gradient(-45deg, #eef0f2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef0f2 75%),
+    linear-gradient(-45deg, transparent 75%, #eef0f2 75%);
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+  background-size: 16px 16px;
+}
+</style>

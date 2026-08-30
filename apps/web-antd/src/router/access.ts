@@ -12,8 +12,6 @@ import { getAllMenusApi } from '#/api';
 import { BasicLayout, IFrameView } from '#/layouts';
 import { $t } from '#/locales';
 
-import { injectPdfPreviewSibling } from './inject-pdf-preview';
-
 const forbiddenComponent = () => import('#/views/_core/fallback/forbidden.vue');
 
 async function generateAccess(options: GenerateMenuAndRoutesOptions) {
@@ -31,8 +29,7 @@ async function generateAccess(options: GenerateMenuAndRoutesOptions) {
         content: `${$t('common.loadingMenu')}...`,
         duration: 1.5,
       });
-      const menus = await getAllMenusApi();
-      return injectPdfPreviewSibling(menus);
+      return getAllMenusApi();
     },
     // 可以指定没有权限跳转403页面
     forbiddenComponent,

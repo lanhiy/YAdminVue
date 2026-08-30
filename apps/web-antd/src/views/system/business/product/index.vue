@@ -4,6 +4,7 @@ import type { TableColumnsType } from 'ant-design-vue';
 import type { ProductInfo, ProductPdfType } from '#/api';
 
 import { h, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
@@ -23,12 +24,7 @@ import {
   Tooltip,
 } from 'ant-design-vue';
 
-import {
-  copyProductApi,
-  deleteProductApi,
-  getProductPdfDataApi,
-  getProductListApi,
-} from '#/api';
+import { copyProductApi, deleteProductApi, getProductListApi } from '#/api';
 
 import CalibrationCertForm from './components/calibration-cert-form.vue';
 import ProductForm from './components/product-form.vue';
@@ -36,6 +32,7 @@ import TestReportForm from './components/test-report-form.vue';
 import VerificationCertForm from './components/verification-cert-form.vue';
 
 const { hasAccessByCodes, hasAccessByRoles } = useAccess();
+const router = useRouter();
 
 const loading = ref(false);
 const productList = ref<ProductInfo[]>([]);
@@ -501,12 +498,14 @@ const handleCopy = (record: ProductInfo) => {
 };
 
 const handleGeneratePdf = async (record: ProductInfo, type: ProductPdfType) => {
-  const certificateId =
-    type === 'test-report'
-      ? record.test_report_id
-      : type === 'verification-cert'
-        ? record.verification_cert_id
-        : record.calibration_cert_id;
+  let certificateId: number | undefined;
+  if (type === 'test-report') {
+    certificateId = record.test_report_id;
+  } else if (type === 'verification-cert') {
+    certificateId = record.verification_cert_id;
+  } else {
+    certificateId = record.calibration_cert_id;
+  }
 
   if (!certificateId) {
     message.warning(`请先录入${pdfTypeLabels[type]}`);
@@ -514,8 +513,13 @@ const handleGeneratePdf = async (record: ProductInfo, type: ProductPdfType) => {
   }
 
   try {
-    await getProductPdfDataApi(certificateId, type);
-    message.success(`${pdfTypeLabels[type]}数据已获取，PDF生成功能待接入`);
+    await router.push({
+      name: 'SystemBusinessPdfPreview',
+      query: {
+        certificateId: String(certificateId),
+        type,
+      },
+    });
   } catch (error: any) {
     message.error(error.message || `${pdfTypeLabels[type]}数据获取失败`);
   }
