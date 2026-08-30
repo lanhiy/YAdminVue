@@ -20,21 +20,10 @@ const FIELDS: { key: keyof CertificateResult; label: string }[] = [
   { key: 'check_unit', label: '校检单位' },
 ];
 
-const SAMPLE_RESULT: CertificateResult = {
-  certificate_no: '926003809',
-  unit_name: '重庆高金实业股份有限公司',
-  instrument_name: '带表卡尺',
-  model: '(0～200)mm 0.02mm',
-  instrument_no: '4602174273',
-  manufacturer: '成量',
-  check_date: '2026-08-04',
-  valid_until: '2027-08-03',
-  check_unit: '',
-};
-
 const route = useRoute();
 const loaded = ref(false);
 const result = ref<CertificateResult | null>(null);
+const queryMessage = ref('');
 
 const token = computed(() => {
   const param = route.params.token;
@@ -56,15 +45,17 @@ function displayValue(key: keyof CertificateResult) {
 async function loadResult() {
   loaded.value = false;
   result.value = null;
+  queryMessage.value = '';
   if (!token.value) {
-    result.value = import.meta.env.DEV ? SAMPLE_RESULT : null;
+    queryMessage.value = '证书查询链接无效';
     loaded.value = true;
     return;
   }
   try {
     result.value = await getCertificateResultApi(token.value);
-  } catch {
+  } catch (error: any) {
     result.value = null;
+    queryMessage.value = error?.message || '未查询到符合条件的证书';
   } finally {
     loaded.value = true;
   }
@@ -79,7 +70,13 @@ watch(token, loadResult, { immediate: true });
       <span class="bar-wrap"><span class="bar"></span></span>
       <span class="span1">
         <h4>证书查询结果</h4>
-        查询结果如下：
+        {{
+          loaded
+            ? hasResult
+              ? '查询结果如下：'
+              : queryMessage
+            : '正在查询证书...'
+        }}
       </span>
     </div>
 
@@ -98,7 +95,9 @@ watch(token, loadResult, { immediate: true });
       <table cellpadding="0" cellspacing="2">
         <tbody>
           <tr class="ta">
-            <td class="td2 empty">未查询到符合条件的证书</td>
+            <td class="td2 empty">
+              {{ queryMessage || '未查询到符合条件的证书' }}
+            </td>
           </tr>
         </tbody>
       </table>

@@ -141,26 +141,10 @@ export interface CertificateResult {
 }
 
 export async function getCertificateResultApi(token: string) {
-  const response = await baseRequestClient.get(
+  const response = await baseRequestClient.get<{ data: CertificateResult }>(
     `/certificate/${encodeURIComponent(token)}`,
   );
-  const payload = (response as { data?: unknown })?.data ?? response;
-
-  if (payload && typeof payload === 'object' && 'certificate_no' in payload) {
-    return payload as CertificateResult;
-  }
-
-  if (payload && typeof payload === 'object' && 'data' in payload) {
-    const wrapped = payload as { code?: number; data?: CertificateResult };
-    if (
-      wrapped.data &&
-      (wrapped.code === undefined || wrapped.code === 0 || wrapped.code === 200)
-    ) {
-      return wrapped.data;
-    }
-  }
-
-  return null;
+  return response.data;
 }
 
 /**

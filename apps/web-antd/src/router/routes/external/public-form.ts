@@ -9,13 +9,7 @@ const pageMeta = {
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/public-form/:token?',
-    name: 'PublicForm',
-    component: () => import('#/views/public-form/index.vue'),
-    meta: pageMeta,
-  },
-  {
-    path: '/certificate/:token',
+    path: '/cert/:token',
     name: 'CertificateQuery',
     component: () => import('#/views/public-form/index.vue'),
     meta: pageMeta,
