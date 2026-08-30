@@ -34,7 +34,7 @@ import { createPdfTemplates } from './templates';
 defineOptions({ name: 'SystemBusinessPdfPreview' });
 
 /** 开发时改为 true，显示宽高位置字号等调试属性，左侧预览按容器宽度铺满 */
-const SHOW_ATTR_DEBUG = true;
+const SHOW_ATTR_DEBUG = false;
 
 const CANVAS_WIDTH = 2479;
 const CANVAS_HEIGHT = 3508;
