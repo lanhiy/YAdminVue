@@ -131,9 +131,23 @@ const totalPages = computed(() => {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
 });
 
+const SLASH_PLACEHOLDER_FIELDS = new Set([
+  '委托方',
+  '地址',
+  '样品名称',
+  '制造厂商',
+  '型号规格',
+  '器具编号',
+  '送检单位',
+  '计量器具名称',
+  '检定依据',
+  '检定结论',
+]);
+
 const displayValue = (name: string, item: OverlayAttr) => {
   if (name === '当前页') return '1';
   if (name === '总页') return String(totalPages.value);
+  if (SLASH_PLACEHOLDER_FIELDS.has(name) && !item.value.trim()) return '/';
   return item.value;
 };
 
